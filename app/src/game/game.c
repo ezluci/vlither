@@ -526,7 +526,7 @@ void create_game(int argc, char** argv) {
 				pthread_cond_signal(&g.connecting_cond);
 			}
 			load_et += dt;
-		} else {			
+		} else {
 			title_screen(&g);
 		}
 		pthread_mutex_unlock(&g.connecting_mutex);
@@ -555,8 +555,10 @@ void create_game(int argc, char** argv) {
 	printf("window exit\n");
 	g.network_done = 1;
 
-	pthread_join(g.load_thread, NULL);
-	pthread_join(g.network_thread, NULL);
+	if (g.played) {
+		pthread_join(g.load_thread, NULL);
+		pthread_join(g.network_thread, NULL);
+	}
 
 	pthread_mutex_destroy(&g.msg_mutex);
 	pthread_cond_destroy(&g.connecting_cond);
