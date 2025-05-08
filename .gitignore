@@ -12,3 +12,7 @@ release/
 
 # ignore zips
 *.zip
+
+core.*
+*.core
+log.txt

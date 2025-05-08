@@ -12,7 +12,7 @@
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "../external/cimgui/cimgui.h"
 
-#define PROTOCOL_VERSION 14
+#define PROTOCOL_VERSION 19
 
 typedef struct prey prey;
 

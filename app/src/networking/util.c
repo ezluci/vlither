@@ -29,7 +29,7 @@ void decode_secret(const uint8_t* packet, uint8_t* result) {
 	}
 
 	int global_value = 0;
-	for (int i = 0; i < 24; i++) {
+	for (int i = 0; i < 27; i++) {
 		int value1 = int_packet[17 + i * 2];
 		if (value1 <= 96) {
 			value1 += 32;
@@ -62,16 +62,21 @@ uint8_t* make_nickname_skin_data(game* g, int* nickname_skin_data_len) {
 
 	uint8_t* reduced_skin_data = reduce_skin(g);
 	int reduced_length = g->settings_instance.cusk ? ig_darray_length(reduced_skin_data) : 0;
-	uint8_t* result = malloc(*nickname_skin_data_len = 8 + nickname_len + 8 + reduced_length);
+	uint8_t* result = malloc(*nickname_skin_data_len = 26 + nickname_len + 10 + reduced_length);
+
+	const int client_version = 291;
+	int cpw[] = {54, 206, 204, 169, 97, 178, 74, 136, 124, 117, 14, 210, 106, 236, 8, 208, 136, 213, 140, 111};
 
 	result[0] = 115;
-	result[1] = 31;
-	result[2] = 333 >> 8 & 255;
-	result[3] = 333 & 255;
-	result[4] = g->settings_instance.cv;
-	result[5] = nickname_len;
+	result[1] = 30;
+	result[2] = client_version >> 8 & 255;
+	result[3] = client_version & 255;
+	for (int i = 0; i < 20; ++i)
+		result[i+4] = cpw[i];
+	result[24] = g->settings_instance.cv;
+	result[25] = nickname_len;
 
-	int j = 6;
+	int j = 26;
 	for (int i = 0; i < nickname_len; i++) {
 		result[j++] = (uint8_t) g->settings_instance.nickname[i];
 	}
