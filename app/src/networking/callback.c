@@ -8,11 +8,16 @@
 
 void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 	game* g = (game*) c->fn_data;
+	printf("EV %d\n", ev);
 
 	if (ev == MG_EV_WS_MSG) {
 		struct mg_ws_message* wm = (struct mg_ws_message*) ev_data;
 		const uint8_t* packet = (const uint8_t*) wm->data.buf;
 		int packet_len = wm->data.len;
+
+		printf("\t\tFULL: %d      =>", packet_len);
+		for (int i = 0; i < packet_len; ++i)	printf("%c ", packet[i]);
+		printf("\n");
 
 		int p = 0;
 		if (packet[p] < 32) {
@@ -31,7 +36,7 @@ void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 				p += len;
 			}
 		} else {
-			gotPacket(c, packet, packet_len);
+			gotPacket(c, packet + p, packet_len - p);
 		}
 
 	} else if (ev == MG_EV_WAKEUP) { // ypdate & render packet
@@ -52,7 +57,13 @@ void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 		MG_ERROR(("error: %p %s", c->fd, (char*) ev_data));
 	} else if (ev == MG_EV_WS_OPEN) {
 		printf("connection opened, sent startlogin\n");
-		mg_ws_send(c, "c", 1, WEBSOCKET_OP_BINARY);
+		uint8_t buf[2];
+		buf[0] = 1;
+		mg_ws_send(c, buf, 1, WEBSOCKET_OP_BINARY);
+		
+		buf[0] = 'c';
+		buf[1] = 0;
+		mg_ws_send(c, buf, 2, WEBSOCKET_OP_BINARY);
 	} else if (ev == MG_EV_CLOSE) {
 		printf("connection closed\n");
 		if (!g->woke_up && g->connected) {
@@ -85,7 +96,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 	fflush(stdout);
 
 	if (packet_type == '6') {
-		// printf("recieved pre-init, sent decrypted message and nickname/skin data\n");
+		printf("recieved pre-init, sent decrypted message and nickname/skin data\n");
 
 		uint8_t ping_packet = 251;
 		uint8_t decoded_secret[27] = {};
@@ -94,8 +105,10 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 
 		decode_secret(packet, decoded_secret);
 
-		mg_ws_send(c, decoded_secret, 24, WEBSOCKET_OP_BINARY);
-		mg_ws_send(c, nickname_skin_data, nickname_skin_data_len, WEBSOCKET_OP_BINARY);
+		mg_ws_send(c, "N638<6ReKRdYLNHgOVCJeAoAKDf", 27, WEBSOCKET_OP_BINARY);
+		// todo
+		// mg_ws_send(c, decoded_secret, 27, WEBSOCKET_OP_BINARY);
+		// mg_ws_send(c, nickname_skin_data, nickname_skin_data_len, WEBSOCKET_OP_BINARY);
 		mg_ws_send(c, &ping_packet, 1, WEBSOCKET_OP_BINARY);
 
 		free(nickname_skin_data);
