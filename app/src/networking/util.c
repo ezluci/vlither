@@ -62,7 +62,7 @@ uint8_t* make_nickname_skin_data(game* g, int* nickname_skin_data_len) {
 
 	uint8_t* reduced_skin_data = reduce_skin(g);
 	int reduced_length = g->settings_instance.cusk ? ig_darray_length(reduced_skin_data) : 0;
-	uint8_t* result = malloc(*nickname_skin_data_len = 26 + nickname_len + 10 + reduced_length);
+	uint8_t* result = malloc(*nickname_skin_data_len = 28 + nickname_len);
 
 	const int client_version = 291;
 	int cpw[] = {54, 206, 204, 169, 97, 178, 74, 136, 124, 117, 14, 210, 106, 236, 8, 208, 136, 213, 140, 111};
@@ -85,18 +85,18 @@ uint8_t* make_nickname_skin_data(game* g, int* nickname_skin_data_len) {
 	result[j++] = 255;
 
 	// custom skin data:
-	result[j++] = 255;
-	result[j++] = 255;
-	result[j++] = 255;
-	result[j++] = 0;
-	result[j++] = 0;
-	result[j++] = 0;
-	result[j++] = (int) floorf(rand() % 256);
-	result[j++] = (int) floorf(rand() % 256);
+	// result[j++] = 255;
+	// result[j++] = 255;
+	// result[j++] = 255;
+	// result[j++] = 0;
+	// result[j++] = 0;
+	// result[j++] = 0;
+	// result[j++] = (int) floorf(rand() % 256);
+	// result[j++] = (int) floorf(rand() % 256);
 
-	for (int i = 0; i < reduced_length; i++) {
-		result[j++] = reduced_skin_data[i];
-	}
+	// for (int i = 0; i < reduced_length; i++) {
+	// 	result[j++] = reduced_skin_data[i];
+	// }
 	
 	ig_darray_destroy(reduced_skin_data);
 

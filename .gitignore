@@ -16,3 +16,5 @@ release/
 core.*
 *.core
 log.txt
+
+.vscode

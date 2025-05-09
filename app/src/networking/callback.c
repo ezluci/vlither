@@ -98,18 +98,22 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 	if (packet_type == '6') {
 		printf("recieved pre-init, sent decrypted message and nickname/skin data\n");
 
-		uint8_t ping_packet = 251;
 		uint8_t decoded_secret[27] = {};
 		int nickname_skin_data_len = 0;
 		uint8_t* nickname_skin_data = make_nickname_skin_data(g, &nickname_skin_data_len);
 
 		decode_secret(packet, decoded_secret);
 
-		mg_ws_send(c, "N638<6ReKRdYLNHgOVCJeAoAKDf", 27, WEBSOCKET_OP_BINARY);
-		// todo
+		uint8_t buf[27];
+		for (int i = 0; i < 27; ++i)	buf[i] = 162;
+		mg_ws_send(c, buf, 27, WEBSOCKET_OP_BINARY);
+
+
+		// mg_ws_send(c, "t9CHEHJGjAdXtIIEgIYOFfzBGkG", 27, WEBSOCKET_OP_BINARY);
+		// mg_ws_send(c, "s\036\001#6\316\314\251a\262J\210|u\016\322j\354\b\320\210\325\214o\001\000\000\377", 28, WEBSOCKET_OP_BINARY);
+		// mg_ws_send(c, "N638<6ReKRdYLNHgOVCJeAoAKDf", 27, WEBSOCKET_OP_BINARY);
 		// mg_ws_send(c, decoded_secret, 27, WEBSOCKET_OP_BINARY);
 		// mg_ws_send(c, nickname_skin_data, nickname_skin_data_len, WEBSOCKET_OP_BINARY);
-		mg_ws_send(c, &ping_packet, 1, WEBSOCKET_OP_BINARY);
 
 		free(nickname_skin_data);
 	} else if (packet_type == 'a') {
