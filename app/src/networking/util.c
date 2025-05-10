@@ -22,41 +22,6 @@ uint8_t* reduce_skin(game* g) {
 	return reduced;
 }
 
-void decode_secret(const uint8_t* packet, uint8_t* result) {
-	int int_packet[165] = {};
-	for (int i = 0; i < 165; i++) {
-		int_packet[i] = (int) packet[i];
-	}
-
-	int global_value = 0;
-	for (int i = 0; i < 27; i++) {
-		int value1 = int_packet[17 + i * 2];
-		if (value1 <= 96) {
-			value1 += 32;
-		}
-		value1 = (value1 - 98 - i * 34) % 26;
-		if (value1 < 0) {
-			value1 += 26;
-		}
-		int value2 = int_packet[18 + i * 2];
-		if (value2 <= 96) {
-			value2 += 32;
-		}
-		value2 = (value2 - 115 - i * 34) % 26;
-		if (value2 < 0) {
-			value2 += 26;
-		}
-		int interim_result = (value1 << 4) | value2;
-		int offset = interim_result >= 97 ? 97 : 65;
-		interim_result -= offset;
-		if (i == 0) {
-			global_value = 2 + interim_result;
-		}
-		result[i] = (uint8_t) ((interim_result + global_value) % 26) + offset;
-		global_value += 3 + interim_result;
-	}
-}
-
 uint8_t* make_nickname_skin_data(game* g, int* nickname_skin_data_len) {
 	int nickname_len = (int) strlen(g->settings_instance.nickname);
 

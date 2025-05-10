@@ -8,16 +8,15 @@
 
 void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 	game* g = (game*) c->fn_data;
-	printf("EV %d\n", ev);
 
 	if (ev == MG_EV_WS_MSG) {
 		struct mg_ws_message* wm = (struct mg_ws_message*) ev_data;
 		const uint8_t* packet = (const uint8_t*) wm->data.buf;
 		int packet_len = wm->data.len;
 
-		printf("\t\tFULL: %d      =>", packet_len);
-		for (int i = 0; i < packet_len; ++i)	printf("%c ", packet[i]);
-		printf("\n");
+		// printf("\t\tFULL: %d      =>", packet_len);
+		// for (int i = 0; i < packet_len; ++i)	printf("%c ", packet[i]);
+		// printf("\n");
 
 		int p = 0;
 		if (packet[p] < 32) {
@@ -89,32 +88,23 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 	uint8_t packet_type = packet[0];
 	int p = 1;
 
-	printf("\t\t%d %c     =>", packet_len, packet_type);
-	for (int i = 0; i < packet_len; ++i)	printf("%d ", packet[i]);
-	printf("\n");
+	printf("\x1B[31m%c\x1B[0m", packet_type);
+	// printf("\t\t%d %c     =>", packet_len, packet_type);
+	// for (int i = 0; i < packet_len; ++i)	printf("%d ", packet[i]);
+	// printf("\n");
 
 	fflush(stdout);
 
 	if (packet_type == '6') {
-		printf("recieved pre-init, sent decrypted message and nickname/skin data\n");
+		printf("received pre-init, sent decrypted message and nickname/skin data\n");
 
 		uint8_t decoded_secret[27] = {};
+		decode_secret(packet, decoded_secret);
+		mg_ws_send(c, decoded_secret, 27, WEBSOCKET_OP_BINARY);
+
 		int nickname_skin_data_len = 0;
 		uint8_t* nickname_skin_data = make_nickname_skin_data(g, &nickname_skin_data_len);
-
-		decode_secret(packet, decoded_secret);
-
-		uint8_t buf[27];
-		for (int i = 0; i < 27; ++i)	buf[i] = 162;
-		mg_ws_send(c, buf, 27, WEBSOCKET_OP_BINARY);
-
-
-		// mg_ws_send(c, "t9CHEHJGjAdXtIIEgIYOFfzBGkG", 27, WEBSOCKET_OP_BINARY);
-		// mg_ws_send(c, "s\036\001#6\316\314\251a\262J\210|u\016\322j\354\b\320\210\325\214o\001\000\000\377", 28, WEBSOCKET_OP_BINARY);
-		// mg_ws_send(c, "N638<6ReKRdYLNHgOVCJeAoAKDf", 27, WEBSOCKET_OP_BINARY);
-		// mg_ws_send(c, decoded_secret, 27, WEBSOCKET_OP_BINARY);
-		// mg_ws_send(c, nickname_skin_data, nickname_skin_data_len, WEBSOCKET_OP_BINARY);
-
+		mg_ws_send(c, nickname_skin_data, nickname_skin_data_len, WEBSOCKET_OP_BINARY);
 		free(nickname_skin_data);
 	} else if (packet_type == 'a') {
 		g->config.grd = packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]; p += 3;

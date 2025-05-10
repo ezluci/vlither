@@ -13,8 +13,13 @@ release/
 # ignore zips
 *.zip
 
+# ignore my own testing files
 core.*
 *.core
 log.txt
 
+# ignore vscode settings
 .vscode
+
+# ignore decode_secret.c
+app/src/networking/decode_secret.c
