@@ -111,6 +111,7 @@ typedef struct game {
 		int mscps;
 		bool md;
 		bool wmd;
+		int flxc;
 
 		float sector_size;
 		float ssd256;
@@ -121,6 +122,8 @@ typedef struct game {
 		float mamu;
 		float mamu2;
 		float cst;
+		float msl;
+		float flux_grd;
 		float qsm;
 
 		int mmsize;

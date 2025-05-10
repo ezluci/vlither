@@ -168,6 +168,7 @@ void create_game(int argc, char** argv) {
 
 			.grd = -1,
 			.mscps = -1,
+			.flxc = 38,
 			.ssd256 = -1,
 			.spangdv = -1,
 			.nsp1 = -1,
@@ -176,6 +177,8 @@ void create_game(int argc, char** argv) {
 			.mamu = -1,
 			.mamu2 = -1,
 			.cst = -1,
+			.msl = -1,
+			.flux_grd = -1,
 			.qsm = 1.7f, // 1 = high quality, 1.7 = low quality
 			.fmlts = ig_darray_create(float),
 			.fpsls = ig_darray_create(float),
