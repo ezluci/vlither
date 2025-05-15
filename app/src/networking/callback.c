@@ -353,7 +353,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			float ly = 0;
 			bool fp = false;
 			int k = 1;
-			// todoooo
 
 			lx = xx;
 			ly = yy;
@@ -388,6 +387,15 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 					.ebx = xx - lx,
 					.eby = yy - ly
 				}));
+
+				if (p + 2 == packet_len) {
+					int iang = packet[p] << 8 | packet[p + 1];
+					p += 2;
+					// po.iang = iang;
+					float ang = iang * 0.00009587379924285889; // 2 * Math.PI / 65536;
+					xx += cos(ang) * g->config.msl;
+					yy += sin(ang) * g->config.msl;
+				}
 			}
 			snake o = {
 				.id = id,
