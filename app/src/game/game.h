@@ -17,6 +17,7 @@
 typedef struct prey prey;
 
 #define PREY_SIZES 22
+#define SMUC 100
 #define MAX_BP_RENDER (10 * (32768 + 512))
 #define MAX_FOOD_RENDER (10 * 16384)
 #define VERSION_STR "v1.7"
@@ -152,6 +153,7 @@ typedef struct game {
 		int lfcv;
 		int wfpr;
 		int lsang;
+		float smus[SMUC];
 
 		float* fmlts;
 		float* fpsls;

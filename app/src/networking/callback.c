@@ -6,6 +6,8 @@
 #include "../game/redraw.h"
 #include "../game/prey.h"
 
+void decode_secret(const uint8_t* packet, uint8_t* result);
+
 void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 	game* g = (game*) c->fn_data;
 
@@ -145,7 +147,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			g->config.flux_grd = g->config.grd * .98;
 		}
 
-		// todo recalcSepMults
+		recalcSepMults(g);
 		set_mscps_fmlts_fpsls(g);
 		// todo? setMinimapSize(24, true);
 
@@ -351,52 +353,85 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			float yy = 0;
 			float lx = 0;
 			float ly = 0;
+			float iang;
 			bool fp = false;
 			int k = 1;
 
-			lx = xx;
-			ly = yy;
 			xx = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
 			yy = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
 			lx = xx;
 			ly = yy;
 
 			ig_darray_push(&pts, (&(body_part) {
-				.eiu = 0,
+				.fpos = 0,
+				.dying = 0,
 				.xx = xx,
 				.yy = yy,
+				.iang = 0,
+				.ftg = 0,
+				.fsmu = 0,
 				.fx = 0,
 				.fy = 0,
+				.fltn = 0,
 				.da = 0,
+				.ltn = 1,
 				.ebx = xx - lx,
-				.eby = yy - ly
+				.eby = yy - ly,
+				.smu = 0,
+				.fxs = {0},
+				.fys = {0},
+				.fltns = {0},
+				.fsmus = {0}
 			}));
 
 			while (p < packet_len) {
 				lx = xx;
 				ly = yy;
-				xx += (packet[p] - 127) / 2.0f; p++;
-				yy += (packet[p] - 127) / 2.0f; p++;
-				ig_darray_push(&pts, (&(body_part) {
-					.eiu = 0,
-					.xx = xx,
-					.yy = yy,
-					.fx = 0,
-					.fy = 0,
-					.da = 0,
-					.ebx = xx - lx,
-					.eby = yy - ly
-				}));
 
 				if (p + 2 == packet_len) {
-					int iang = packet[p] << 8 | packet[p + 1];
-					p += 2;
-					// po.iang = iang;
+					iang = packet[p] << 8 | packet[p+1];	p += 2;
 					float ang = iang * 0.00009587379924285889; // 2 * Math.PI / 65536;
 					xx += cos(ang) * g->config.msl;
 					yy += sin(ang) * g->config.msl;
+				} else {
+					xx += (packet[p] - 127) / 2.0f; p++;
+					yy += (packet[p] - 127) / 2.0f; p++;
 				}
+
+				ig_darray_push(&pts, (&(body_part) {
+					.fpos = 0,
+					.dying = 0,
+					.xx = xx,
+					.yy = yy,
+					.iang = iang,
+					.ftg = 0,
+					.fsmu = 0,
+					.fx = 0,
+					.fy = 0,
+					.fltn = 0,
+					.da = 0,
+					.ltn = 1,
+					.ebx = xx - lx,
+					.eby = yy - ly,
+					.smu = 0,
+					.fxs = {0},
+					.fys = {0},
+					.fltns = {0},
+					.fsmus = {0}
+				}));
 			}
+
+			int pts_len = ig_darray_length(pts);
+			int j = 0;
+			k = 1;
+			for (int i = pts_len - 1; i >= 0; --i) {
+				if (j < SMUC-3) {
+					k = g->config.smus[j];
+					j++;
+				}
+				pts[i].smu = k;
+			}
+
 			snake o = {
 				.id = id,
 				.xx = snx,
@@ -410,10 +445,12 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				.skin_data_len = skin_data_len,
 				.skin_data = skin_data,
 				.cusk = cusk,
-				.ehl = 1
+				.ehl = 1,
+				.gptz = ig_darray_create(gptz_struct),
+				.kill_count = 0,
+				.msl = g->config.msl
 			};
 
-			int pts_len = ig_darray_length(pts);
 			if (pts_len) {
 				o.pts = pts;
 				o.sct = pts_len;
@@ -425,7 +462,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			}
 
 			o.tl = o.sct + o.fam;
-			o.cfl = o.tl;
+			o.cfl = o.tl; // render_mode == 1
 
 			if (snake_map_get_total(&g->os) == 0) {
 				g->snake_null = 0;
@@ -554,45 +591,83 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			body_part* lpo = po;
 
 			if (o->iiv) {
-				dx = o->xx + o->fx - po->xx;
-				dy = o->yy + o->fy - po->yy;
-				po->fx += dx;
-				po->fy += dy;
-				po->exs[po->eiu] = dx;
-				po->eys[po->eiu] = dy;
-				po->efs[po->eiu] = 0;
-				po->ems[po->eiu] = 1;
-				po->eiu++;
+				dx = o->xx + o->fx - (o->pts[lpo_i].xx + o->pts[lpo_i].fx);
+				dy = o->yy + o->fy - (o->pts[lpo_i].yy + o->pts[lpo_i].fy);
+				float d = sqrt(dx*dx + dy*dy);
+				if (d > 1) {
+					dx /= d;
+					dy /= d;
+				}
+				float d2 = po->ltn * g->config.msl;
+				float d3;
+				if (d < g->config.msl)	d3 = d;
+				else	d3 = d2;
+
+				float ox = o->pts[lpo_i].xx + o->pts[lpo_i].fx + dx * d3;
+				float oy = o->pts[lpo_i].yy + o->pts[lpo_i].fy + dy * d3;
+				float dltn = 1 - d3 / d2;
+				dx = po->xx - ox;
+				dy = po->yy - oy;
+				int k = po->fpos;
+				for (int j = 0; j < HFC; ++j) {
+					po->fxs[k] -= dx * g->config.hfas[j];
+					po->fys[k] -= dy * g->config.hfas[j];
+               po->fltns[k] -= dltn * g->config.hfas[j];
+					k++;
+					if (k >= HFC)	k = 0;
+				}
+
+				po->fx = po->fxs[po->fpos];
+				po->fy = po->fys[po->fpos];
+				po->fltn = po->fltns[po->fpos];
+				po->fsmu = po->fsmus[po->fpos];
+				po->ftg = HFC;
 			}
 
-			pts_len = ig_darray_length(o->pts);
-			int k = pts_len - 3;
+			lpo = po;
+			int n2 = 3;
+			int k = ig_darray_length(o->pts) - 3;
 			if (k >= 1) {
-				lmpo = o->pts + k;
+				body_part* lmpo = &o->pts[k];
 				int n = 0;
-				float mv = 0;
-				for (int j = k - 1; j >= 0; j--) {
-					mpo = o->pts + j;
+				float mv = 0, dsmu = 0;
+				for (int m = k-1; m >= 0; --m) {
+					body_part* mpo = &o->pts[m];
 					n++;
-					dx = mpo->xx;
-					dy = mpo->yy;
-					if (n <= 4) mv = g->config.cst * n / 4.0f;
+					float ox = mpo->xx;
+					float oy = mpo->yy;
+					float osmu = mpo->smu;
+					if (n <= 4)	mv = g->config.cst * n / 4;
 					mpo->xx += (lmpo->xx - mpo->xx) * mv;
 					mpo->yy += (lmpo->yy - mpo->yy) * mv;
+					if (mpo->smu != g->config.smus[n2]) {
+						osmu = mpo->smu;
+						mpo->smu = g->config.smus[n2];
+						dsmu = mpo->smu - osmu;
+					} else {
+						dsmu = 0;
+					}
+					if (n2 < SMUC-3)	n2++;
 					if (o->iiv) {
-						dx -= mpo->xx;
-						dy -= mpo->yy;
-						mpo->fx += dx;
-						mpo->fy += dy;
-						mpo->exs[mpo->eiu] = dx;
-						mpo->eys[mpo->eiu] = dy;
-						mpo->efs[mpo->eiu] = 0;
-						mpo->ems[mpo->eiu] = 2;
-						mpo->eiu++;
+						dx = mpo->xx - ox;
+						dy = mpo->yy - oy;
+						int k = mpo->fpos;
+						for (int j = 0; j < HFC; ++j) {
+							mpo->fxs[k] -= dx * g->config.hfas[j];
+							mpo->fys[k] -= dy * g->config.hfas[j];
+							mpo->fsmus[k] -= dsmu * g->config.hfas[j];
+							k++;
+							if (k >= HFC)	k = 0;
+						}
+						mpo->fx = mpo->fxs[mpo->fpos];
+						mpo->fy = mpo->fys[mpo->fpos];
+						mpo->fsmu = mpo->fsmus[mpo->fpos];
+						mpo->ftg = HFC;
 					}
 					lmpo = mpo;
 				}
 			}
+			
 
 			o->sc = fminf(6, 1 + (o->sct - 2) / 106.0f);
 			o->scang = 0.13f + 0.87f * powf((7 - o->sc) / 6.0f, 2);

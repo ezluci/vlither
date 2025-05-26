@@ -9,9 +9,10 @@
 
 typedef struct game game;
 
-void decode_secret(const uint8_t* packet, uint8_t* result);
 uint8_t* make_nickname_skin_data(game* g, int* nickname_skin_data_len);
 void set_mscps_fmlts_fpsls(game* g);
+void recalcSepMults(game* g);
+
 void reset_game(game* g);
 void set_settings(game* g);
 void save_settings(game* g);

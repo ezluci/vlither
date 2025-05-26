@@ -4,9 +4,9 @@
 #include <ignite.h>
 #include <stdbool.h>
 
-#define LFC 128
-#define RFC 43
-#define HFC 92
+#define LFC 53
+#define RFC 53
+#define HFC 53
 #define AFC 26
 #define VFC 62
 
@@ -17,16 +17,29 @@ typedef struct body_part {
 	float yy;
 	float fx;
 	float fy;
+	float iang;
 	float ebx;
 	float eby;
-	int dying;
+	float fltn;
 	float da;
-	int eiu;
-	int efs[128];
-	float exs[128];
-	float eys[128];
-	float ems[128];
+	float ltn;
+	int fpos;
+	float ftg;
+	float fsmu;
+	float smu;
+	int dying;
+	float fxs[HFC];
+	float fys[HFC];
+	float fltns[HFC];
+	float fsmus[HFC];
 } body_part;
+
+typedef struct gptz_struct {
+	float ox;
+	float oy;
+	float xx;
+	float yy;
+} gptz_struct;
 
 typedef struct snake {
 	int id;
@@ -64,7 +77,10 @@ typedef struct snake {
 	float wehang;
 	float ehang;
 	float fchl;
+	float msl;
 	body_part* pts;
+	gptz_struct* gptz;
+
 	float fxs[RFC];
 	float fys[RFC];
 	float fchls[RFC];
@@ -84,6 +100,7 @@ typedef struct snake {
 	bool dead;
 	float dead_amt;
 	float alive_amt;
+	int kill_count;
 } snake;
 
 void snake_update_length(snake* snake, game* g);

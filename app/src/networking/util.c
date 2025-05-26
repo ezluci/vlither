@@ -83,6 +83,23 @@ void set_mscps_fmlts_fpsls(game* g) {
 	}
 }
 
+void recalcSepMults(game* g) {
+	int n = 0;
+	int k = 3;
+	int mv = 0;
+	for (int i = 0; i < SMUC; ++i) {
+		if (i < k) {
+			g->config.smus[i] = 1;
+		} else {
+			n++;
+			if (n <= 4) {
+				mv = g->config.cst * n / 4;
+			}
+			g->config.smus[i] = 1 - mv;
+		}
+	}
+}
+
 void reset_game(game* g) {
 	// glfwSetTime(0);
 

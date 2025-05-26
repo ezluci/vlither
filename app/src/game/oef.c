@@ -226,46 +226,57 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		}
 
 		if (g->config.vfrb > 0) {
+			int k = 0;
 			pts_len = ig_darray_length(o->pts);
 			for (int j = pts_len - 1; j >= 0; j--) {
 				po = o->pts + j;
 				if (po->dying) {
+					k++;
 					po->da += .0015f * g->config.vfrb;
-					if (po->da > 1) {
-						ig_darray_remove(o->pts, j);
+					if (po->da >= 1) {
+						po->da = 1;
+						if (k >= 4) {
+							ig_darray_remove(o->pts, j);
+						}
 					}
 				}
 			}
 			pts_len = ig_darray_length(o->pts);
 			for (int j = pts_len - 1; j >= 0; j--) {
 				po = o->pts + j;
-				if (po->eiu > 0) {
-					float fx = 0;
-					float fy = 0;
-					int cm1 = po->eiu - 1;
-					for (int qq = cm1; qq >= 0; qq--) {
-						if (po->ems[qq] == 2) po->efs[qq] += g->config.vfrb2;
-						else po->efs[qq] += g->config.vfrb;
-						int k = po->efs[qq];
-						if (k >= HFC) {
-							if (qq == cm1) {
-								po->eiu--;
-								cm1--;
-							} else {
-								po->exs[qq] = po->exs[cm1];
-								po->eys[qq] = po->eys[cm1];
-								po->efs[qq] = po->efs[cm1];
-								po->ems[qq] = po->ems[cm1];
-								po->eiu--;
-								cm1--;
-							}
-						} else {
-							fx += po->exs[qq] * g->config.hfas[k];
-							fy += po->eys[qq] * g->config.hfas[k];
-						}
+				if (po->ftg > 0) {
+					float k = g->config.vfrb;
+					if (k > po->ftg)	k = po->ftg;
+					po->ftg -= k;
+					for (int qq = 0; qq < k; ++qq) {
+						o->fx = o->fxs[o->fpos];
+						o->fy = o->fys[o->fpos];
+						o->fchl = o->fchls[o->fpos];
+						o->fxs[o->fpos] = 0;
+						o->fys[o->fpos] = 0;
+						o->fchls[o->fpos] = 0;
+						o->fpos++;
+						if (o->fpos >= RFC)	o->fpos = 0;
 					}
-					po->fx = fx;
-					po->fy = fy;
+				} else if (o->ftg == 0) {
+					o->ftg = -1;
+					o->fx = 0;
+					o->fy = 0;
+					o->fchl = 0;
+				}
+				if (o->fatg > 0) {
+					float k = g->config.vfrb;
+					if (k > o->fatg)	k = o->fatg;
+					o->fatg -= k;
+					for (int qq = 0; qq < k; ++qq) {
+						o->fa = o->fas[o->fapos];
+						o->fas[o->fapos] = 0;
+						o->fapos++;
+						if (o->fapos >= AFC)	o->fapos = 0;
+					}
+				} else if (o->fatg == 0) {
+					o->fatg = -1;
+					o->fa = 0;
 				}
 			}
 		}
