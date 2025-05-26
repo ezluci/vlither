@@ -18,6 +18,8 @@ typedef struct prey prey;
 
 #define PREY_SIZES 22
 #define SMUC 100
+#define P04LEN 250
+#define P12LEN 250
 #define MAX_BP_RENDER (10 * (32768 + 512))
 #define MAX_FOOD_RENDER (10 * 16384)
 #define VERSION_STR "v1.7"
@@ -140,7 +142,7 @@ typedef struct game {
 		float lag_mult;
 		float fr;
 		float lfr;
-		float vfrb;
+		int vfrb;
 		float vfrb2;
 		float lfr2;
 		float fr2;
@@ -163,6 +165,8 @@ typedef struct game {
 		float hfas[HFC];
 		float afas[AFC];
 		float vfas[VFC];
+		float p04[P04LEN];
+		float p12[P12LEN];
 		float pbx[32767 * 2];
 		float pby[32767 * 2];
 		float pba[32767 * 2];

@@ -24,7 +24,7 @@ typedef struct body_part {
 	float da;
 	float ltn;
 	int fpos;
-	float ftg;
+	int ftg;
 	float fsmu;
 	float smu;
 	int dying;
@@ -79,7 +79,7 @@ typedef struct snake {
 	float fchl;
 	float msl;
 	body_part* pts;
-	gptz_struct* gptz;
+	gptz_struct gptz;
 
 	float fxs[RFC];
 	float fys[RFC];

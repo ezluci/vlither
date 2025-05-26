@@ -380,6 +380,16 @@ void create_game(int argc, char** argv) {
 		j += (.5 * (1 - cosf(PI * j)) - j) * .5;
 		g.config.vfas[i] = j;
 	}
+	int j = 0;
+	for (int i = 0; i < P04LEN; i++) {
+		g.config.p04[i] = j;
+		j += (1 - j) * .04f;
+	}
+	j = 0;
+	for (int i = 0; i < P12LEN; i++) {
+		g.config.p12[i] = j;
+		j += (1 - j) * .12f;
+	}
 	
 	int i = 0;
 	for (float j = 2.8f; j <= 18.8f; j += 1) {

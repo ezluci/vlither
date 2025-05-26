@@ -446,7 +446,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				.skin_data = skin_data,
 				.cusk = cusk,
 				.ehl = 1,
-				.gptz = ig_darray_create(gptz_struct),
+				.gptz = {},
 				.kill_count = 0,
 				.msl = g->config.msl
 			};
@@ -511,6 +511,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 						g->os.snakes[i].dead_amt = 0;
 					} else
 						snake_map_remove_idx(&g->os, i);
+						// !! remove from g->os.snakes?
 					break;
 				}
 			}

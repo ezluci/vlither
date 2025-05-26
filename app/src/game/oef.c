@@ -20,28 +20,27 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		}
 	if (g->config.lagging) {
 		g->config.lag_mult *= 0.85f;
-		if (g->config.lag_mult < 0.01f) g->config.lag_mult = 0.01f;
-	}
-	else if (g->config.lag_mult < 1) {
+		if (g->config.lag_mult < 0.2f)	g->config.lag_mult = 0.2f;
+	} else if (g->config.lag_mult < 1) {
 		g->config.lag_mult += 0.05f;
-		if (g->config.lag_mult >= 1) g->config.lag_mult = 1.0f;
+		if (g->config.lag_mult >= 1)	g->config.lag_mult = 1.0f;
 	}
 
-	// if (g->config.vfr > 120) g->config.vfr = 120;
-    g->config.vfr *= g->config.lag_mult;
-    g->config.lfr = g->config.fr;
-    g->config.fr += g->config.vfr;
-    g->config.vfrb = floorf(g->config.fr) - floorf(g->config.lfr);
-    g->config.lfr2 = g->config.fr2;
-    g->config.fr2 += g->config.vfr * 2;
-    g->config.vfrb2 = floorf(g->config.fr2) - floorf(g->config.lfr2);
-    g->config.afr += g->config.avfr;
+	if (g->config.vfr > 120) g->config.vfr = 120;
+	g->config.vfr *= g->config.lag_mult;
+	g->config.lfr = g->config.fr;
+	g->config.fr += g->config.vfr;
+	g->config.vfrb = floorf(g->config.fr) - floorf(g->config.lfr);
+	g->config.lfr2 = g->config.fr2;
+	g->config.fr2 += g->config.vfr * 2;
+	g->config.vfrb2 = floorf(g->config.fr2) - floorf(g->config.lfr2);
+	g->config.afr += g->config.avfr;
 
 	if (!g->config.wfpr) {
 		if (input_data->ctm - g->config.last_ping_mtm > 250) {
-			uint8_t ba[1] = { 251 };
 			g->config.last_ping_mtm = input_data->ctm;
 			g->config.wfpr = true;
+			uint8_t ba[1] = { 251 };
 			mg_ws_send(c, ba, 1, WEBSOCKET_OP_BINARY);
 			// printf("ping\n");
 		}
@@ -92,6 +91,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		int want_e = 0;
 		float ang = 0;
 		if (input_data->mouse_delta.x != 0 || input_data->mouse_delta.y != 0) want_e = 1;
+		// g->os.snakes[0].eang = atan2(ym, yx);
 		if (want_e && input_data->ctm - g->config.last_e_mtm > 50) {
 			want_e = 0;
 			g->config.last_e_mtm = input_data->ctm;
@@ -114,7 +114,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		}
 	}
 
-	float mang, vang, emang;
+	float mang, vang, tang;
 
 	int snakes_len = ig_darray_length(g->os.snakes);
 	for (int i = snakes_len - 1; i >= 0; i--) {
@@ -127,10 +127,12 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		if (!o->dead) {
 			if (o->tsp != o->sp) {
 				if (o->tsp < o->sp) {
-					o->tsp += .3 * g->config.vfr;
+					o->tsp += (o->sp - o->tsp) * .1f;
+					o->tsp += 1e-4;
 					if (o->tsp > o->sp) o->tsp = o->sp;
 				} else {
-					o->tsp -= .3 * g->config.vfr;
+					o->tsp += (o->sp - o->tsp) * .3f;
+					o->tsp -= 1e-4;
 					if (o->tsp < o->sp) o->tsp = o->sp;
 				}
 			}
@@ -151,7 +153,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 				o->fltg = -1;
 				o->fl = 0;
 			}
-			o->cfl = o->tl + o->fl;
+			o->cfl = o->tl + o->fl - .6f;
 		}
 		if (o->dir == 1) {
 			o->ang -= mang;
@@ -180,9 +182,9 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			o->ehl += 0.03f * g->config.vfr;
 			if (o->ehl >= 1) o->ehl = 1;
 		}
-		int pts_len = ig_darray_length(o->pts);
-		body_part* po = o->pts + pts_len - 1;
-		o->wehang = atan2f(o->yy + o->fy - po->yy - po->fy + po->eby * (1 - o->ehl), o->xx + o->fx - po->xx - po->fx + po->ebx * (1 - o->ehl));
+		// int pts_len = ig_darray_length(o->pts);
+		// body_part* po = o->pts + pts_len - 1;
+		// o->wehang = atan2f(o->yy + o->fy - po->yy - po->fy + po->eby * (1 - o->ehl), o->xx + o->fx - po->xx - po->fx + po->ebx * (1 - o->ehl));
 		// if (o == g->os.snakes)
 			// printf("wehang = %.2f\n", po->eby);
 
@@ -196,7 +198,10 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			}
 		}
 		if (edir == 1) {
-			o->ehang -= 0.1f * g->config.vfr;
+			tang = fmodf(o->wehang - o->ehang, X2PI);
+			if (tang < 0)	tang += X2PI;
+			if (tang > PI)	tang -= X2PI;
+			o->ehang += tang * g->config.p12[g->config.vfrb];
 			if (o->ehang < 0 || o->ehang >= X2PI) o->ehang = fmodf(o->ehang, X2PI);
 			if (o->ehang < 0) o->ehang += X2PI;
 			vang = fmodf(o->wehang - o->ehang, X2PI);
@@ -207,7 +212,10 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 				edir = 0;
 			}
 		} else if (edir == 2) {
-			o->ehang += 0.1f * g->config.vfr;
+			tang = fmodf(o->wehang - o->ehang, X2PI);
+			if (tang < 0)	tang += X2PI;
+			if (tang > PI)	tang -= X2PI;
+			o->ehang += tang * g->config.p12[g->config.vfrb];
 			if (o->ehang < 0 || o->ehang >= X2PI) o->ehang = fmodf(o->ehang, X2PI);
 			if (o->ehang < 0) o->ehang += X2PI;
 			vang = fmodf(o->wehang - o->ehang, X2PI);
@@ -227,7 +235,8 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 
 		if (g->config.vfrb > 0) {
 			int k = 0;
-			pts_len = ig_darray_length(o->pts);
+			int pts_len = ig_darray_length(o->pts);
+			body_part* po;
 			for (int j = pts_len - 1; j >= 0; j--) {
 				po = o->pts + j;
 				if (po->dying) {
@@ -245,38 +254,27 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			for (int j = pts_len - 1; j >= 0; j--) {
 				po = o->pts + j;
 				if (po->ftg > 0) {
-					float k = g->config.vfrb;
+					int k = g->config.vfrb;
 					if (k > po->ftg)	k = po->ftg;
 					po->ftg -= k;
 					for (int qq = 0; qq < k; ++qq) {
-						o->fx = o->fxs[o->fpos];
-						o->fy = o->fys[o->fpos];
-						o->fchl = o->fchls[o->fpos];
-						o->fxs[o->fpos] = 0;
-						o->fys[o->fpos] = 0;
-						o->fchls[o->fpos] = 0;
-						o->fpos++;
-						if (o->fpos >= RFC)	o->fpos = 0;
+						po->fx = po->fxs[po->fpos];
+						po->fy = po->fys[po->fpos];
+						po->fltn = po->fltns[po->fpos];
+						po->fsmu = po->fsmus[po->fpos];
+						po->fxs[po->fpos] = 0;
+						po->fys[po->fpos] = 0;
+						po->fltns[po->fpos] = 0;
+						po->fsmus[po->fpos] = 0;
+						po->fpos++;
+						if (po->fpos >= HFC)	po->fpos = 0;
 					}
-				} else if (o->ftg == 0) {
-					o->ftg = -1;
-					o->fx = 0;
-					o->fy = 0;
-					o->fchl = 0;
-				}
-				if (o->fatg > 0) {
-					float k = g->config.vfrb;
-					if (k > o->fatg)	k = o->fatg;
-					o->fatg -= k;
-					for (int qq = 0; qq < k; ++qq) {
-						o->fa = o->fas[o->fapos];
-						o->fas[o->fapos] = 0;
-						o->fapos++;
-						if (o->fapos >= AFC)	o->fapos = 0;
-					}
-				} else if (o->fatg == 0) {
-					o->fatg = -1;
-					o->fa = 0;
+				} else if (po->ftg == 0) {
+					po->ftg = -1;
+					po->fx = 0;
+					po->fy = 0;
+					po->fltn = 0;
+					po->fsmu = 0;
 				}
 			}
 		}
