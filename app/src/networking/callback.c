@@ -169,10 +169,11 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		g->config.kills_display = 0;
 	} else if (packet_type == 'e' || packet_type == 'E' || packet_type == '3' || packet_type == '4' || packet_type == '5' || packet_type == 'd' || packet_type == '7') {
 		snake* o = NULL;
-		if (packet_type == 'd' || packet_type == '7' || packet_len <= 5 && (packet_type == 'e' || packet_type == 'E' || packet_type == '3' || packet_type == '4' || packet_type == '5')) {
+		if (packet_type == 'd' || packet_type == '7' ||
+				packet_len <= 3 && (packet_type == 'e' || packet_type == 'E' || packet_type == '3' || packet_type == '4' || packet_type == '5')
+			) {
 			o = g->os.snakes + 0;
-		}
-		else {
+		} else {
 			int id = packet[p] << 8 | packet[p + 1]; p += 2;
 			o = snake_map_get(&g->os, id);
 		}
@@ -182,7 +183,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		float wang = -1;
 		float speed = -1;
 
-		if (packet_len == 8) {
+		if (packet_len == 6) {
 			if (packet_type == 'e') dir = 1;
 			else dir = 2;
 			ang = packet[p] * 2 * PI / 256.0f;
@@ -191,7 +192,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			p++;
 			speed = packet[p] / 18.0f;
 			p++;
-		} else if (packet_len == 7 || packet_len == 5) {
+		} else if (packet_len == 5 || packet_len == 3) {
 			if (packet_type == 'e') {
 				ang = packet[p] * 2 * PI / 256.0f;
 				p++;
@@ -229,7 +230,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				}
 			}
 		} else {
-			if (packet_len == 6 || packet_len == 4) {
+			if (packet_len == 4 || packet_len == 2) {
 				if (packet_type == 'e') {
 					ang = packet[p] * 2 * PI / 256.0f;
 					p++;
@@ -307,7 +308,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 	} else if (packet_type == 's') { // add/remove snake
 		int id = packet[p] << 8 | packet[p + 1]; p += 2;
 
-		if (packet_len > 6) {
+		if (packet_len > 7) {
 			float ang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 			int dir = packet[p] - 48; p++;
 			float wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
@@ -494,7 +495,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			o.ssp = g->config.nsp1 + g->config.nsp2 * o.sc;
 			o.fsp = o.ssp + 0.1f;
 			o.wsep = 6 * o.sc;
-			float mwsep = 4.5f / 0.7f;
+			float mwsep = 4.5f / 0.7f; // ! zoom
 			if (o.wsep < mwsep) o.wsep = mwsep;
 			o.sep = o.wsep;
 			snake_update_length(&o, g);
@@ -531,214 +532,247 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			message_queue_push(&g->msg_queue, &msg);
 			pthread_mutex_unlock(&g->msg_mutex);
 		}
-	} else if (packet_type == 'G' || packet_type == 'N' || packet_type == 'g' || packet_type == 'n') { // update snake length
+	} else if (packet_type == 'G' || packet_type == 'N' || packet_type == 'g' || packet_type == 'n' || packet_type == '+' || packet_type == '=') { // update snake length
+		
 		snake* o = NULL;
-		if (packet_type == 'g' && packet_len == 7 || packet_type == 'G' && packet_len == 5 || packet_type == 'n' && packet_len == 10 || packet_type == 'N' && packet_len == 8)
+		if (packet_type == 'G' || packet_type == 'N' ||
+				packet_type == '=' && packet_len == 7 ||
+				packet_type == '+' && packet_len == 10) {
 			o = g->os.snakes + 0;
-		else {
-			int id = packet[p] << 8 | packet[p + 1]; p += 2;
+		} else {
+			int id = packet[p] << 8 | packet[p+1];	p += 2;
 			o = snake_map_get(&g->os, id);
 		}
+		// if (packet_type == 'g' && packet_len == 7 || packet_type == 'G' && packet_len == 5 || packet_type == 'n' && packet_len == 10 || packet_type == 'N' && packet_len == 8)
+		// 	o = g->os.snakes + 0;
+		// else {
+		// 	int id = packet[p] << 8 | packet[p + 1]; p += 2;
+		// 	o = snake_map_get(&g->os, id);
+		// }
 
-		if (o) {
-			int adding_only = packet_type == 'N' || packet_type == 'n';
+		if (!o) {
+			return;
+		}
 
-			int pts_len = ig_darray_length(o->pts);
-			if (adding_only) {
-				// if (o == g->os.snakes) printf("adding\n");
-				o->sct++;
-			}
-			else {
-				for (int j = 0; j < pts_len; j++) {
-					if (!o->pts[j].dying) {
-						o->pts[j].dying = 1;
-						break;
-					}
+		int adding_only = packet_type == 'N' || packet_type == 'n' || packet_type == '+';
+
+		int pts_len = ig_darray_length(o->pts);
+		if (adding_only) {
+			// if (o == g->os.snakes) printf("adding\n");
+			o->sct++;
+		}
+		else {
+			for (int j = 0; j < pts_len; j++) {
+				if (!o->pts[j].dying) {
+					o->pts[j].dying = 1;
+					break;
 				}
 			}
+		}
 
-			body_part* po = o->pts + (pts_len - 1);
-			int lpo_i = pts_len - 1;
-			body_part* lmpo;
-			body_part* mpo;
-			float dx, dy;
+		body_part* lpo = o->pts + pts_len - 1;
+		body_part* lmpo;
+		body_part* mpo;
+		float dx, dy, ox, oy, mv, dltn, dsmu, osmu, d;
+		float msl = o->msl;
 
-			float xx = 0;
-			float yy = 0;
+		float xx = 0;
+		float yy = 0;
+		float iang;
 
-			if (packet_type == 'g' || packet_type == 'n') {
-				xx = packet[p] << 8 | packet[p + 1]; p += 2;
-				yy = packet[p] << 8 | packet[p + 1]; p += 2;
+		if (packet_type == '+' || packet_type == '=') {
+			iang = packet[p] << 8 || packet[p+1];	p += 2;
+			xx = packet[p] << 8 | packet[p+1];	p += 2;
+			yy = packet[p] << 8 | packet[p+1];	p += 2;
+		} else {
+			if (packet_type == 'G' && packet_len == 3 ||
+					packet_type == 'N' && packet_len == 6 ||
+					packet_type == 'g' && packet_len == 5 ||
+					packet_type == 'n' && packet_len == 8) {
+				iang = packet[p] << 8 | packet[p+1];	p += 2;
 			} else {
-				xx = po->xx + packet[p] - 128; p++;
-				yy = po->yy + packet[p] - 128; p++;
+				iang = lpo->iang;
 			}
+			float ang = iang * 0.00009587379924285889; // 2 * Math.PI / 65536;
+			xx = lpo->xx + cosf(ang) * msl;
+			yy = lpo->yy + sinf(ang) * msl;
+		}
 
-			if (adding_only) {
-				o->fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
+		if (adding_only) {
+			o->fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
+		}
+
+		ig_darray_push(&o->pts, (&(body_part) {
+			.xx = xx,
+			.yy = yy,
+			.fx = 0,
+			.fy = 0,
+			.iang = iang,
+			.ebx = xx - lpo->xx,
+			.eby = yy - lpo->yy,
+			.fltn = 0,
+			.da = 0,
+			.ltn = sqrtf(powf(xx - lpo->xx, 2) + powf(yy - lpo->yy, 2)) / msl,
+			.fpos = 0,
+			.ftg = 0,
+			.fsmu = 0,
+			.smu = 1,
+			.dying = 0,
+			.fxs = {0},
+			.fys = {0},
+			.fltns = {0},
+			.fsmus = {0}
+		}));
+
+		pts_len = ig_darray_length(o->pts);
+		body_part* po = o->pts + (pts_len - 1);
+
+		if (o->iiv) {
+			dx = o->xx + o->fx - (lpo->xx + lpo->fx);
+			dy = o->yy + o->fy - (lpo->yy + lpo->fy);
+			float d = sqrtf(dx*dx + dy*dy);
+			if (d > 1) {
+				dx /= d;
+				dy /= d;
 			}
+			float d2 = po->ltn * g->config.msl;
+			float d3;
+			if (d < g->config.msl)	d3 = d;
+			else	d3 = d2;
 
-			ig_darray_push(&o->pts, (&(body_part) {
-				.xx = xx,
-				.yy = yy
-			}));
-
-			pts_len = ig_darray_length(o->pts);
-			po = o->pts + (pts_len - 1);
-
-			po->ebx = po->xx - o->pts[lpo_i].xx;
-			po->eby = po->yy - o->pts[lpo_i].yy;
-
-			body_part* lpo = po;
-
-			if (o->iiv) {
-				dx = o->xx + o->fx - (o->pts[lpo_i].xx + o->pts[lpo_i].fx);
-				dy = o->yy + o->fy - (o->pts[lpo_i].yy + o->pts[lpo_i].fy);
-				float d = sqrt(dx*dx + dy*dy);
-				if (d > 1) {
-					dx /= d;
-					dy /= d;
-				}
-				float d2 = po->ltn * g->config.msl;
-				float d3;
-				if (d < g->config.msl)	d3 = d;
-				else	d3 = d2;
-
-				float ox = o->pts[lpo_i].xx + o->pts[lpo_i].fx + dx * d3;
-				float oy = o->pts[lpo_i].yy + o->pts[lpo_i].fy + dy * d3;
-				float dltn = 1 - d3 / d2;
-				dx = po->xx - ox;
-				dy = po->yy - oy;
-				int k = po->fpos;
-				for (int j = 0; j < HFC; ++j) {
-					po->fxs[k] -= dx * g->config.hfas[j];
-					po->fys[k] -= dy * g->config.hfas[j];
-               po->fltns[k] -= dltn * g->config.hfas[j];
-					k++;
-					if (k >= HFC)	k = 0;
-				}
-
-				po->fx = po->fxs[po->fpos];
-				po->fy = po->fys[po->fpos];
-				po->fltn = po->fltns[po->fpos];
-				po->fsmu = po->fsmus[po->fpos];
-				po->ftg = HFC;
-			}
-
-			lpo = po;
-			int n2 = 3;
-			int k = ig_darray_length(o->pts) - 3;
-			if (k >= 1) {
-				body_part* lmpo = &o->pts[k];
-				int n = 0;
-				float mv = 0, dsmu = 0;
-				for (int m = k-1; m >= 0; --m) {
-					body_part* mpo = &o->pts[m];
-					n++;
-					float ox = mpo->xx;
-					float oy = mpo->yy;
-					float osmu = mpo->smu;
-					if (n <= 4)	mv = g->config.cst * n / 4;
-					mpo->xx += (lmpo->xx - mpo->xx) * mv;
-					mpo->yy += (lmpo->yy - mpo->yy) * mv;
-					if (mpo->smu != g->config.smus[n2]) {
-						osmu = mpo->smu;
-						mpo->smu = g->config.smus[n2];
-						dsmu = mpo->smu - osmu;
-					} else {
-						dsmu = 0;
-					}
-					if (n2 < SMUC-3)	n2++;
-					if (o->iiv) {
-						dx = mpo->xx - ox;
-						dy = mpo->yy - oy;
-						int k = mpo->fpos;
-						for (int j = 0; j < HFC; ++j) {
-							mpo->fxs[k] -= dx * g->config.hfas[j];
-							mpo->fys[k] -= dy * g->config.hfas[j];
-							mpo->fsmus[k] -= dsmu * g->config.hfas[j];
-							k++;
-							if (k >= HFC)	k = 0;
-						}
-						mpo->fx = mpo->fxs[mpo->fpos];
-						mpo->fy = mpo->fys[mpo->fpos];
-						mpo->fsmu = mpo->fsmus[mpo->fpos];
-						mpo->ftg = HFC;
-					}
-					lmpo = mpo;
-				}
-			}
-			
-
-			o->sc = fminf(6, 1 + (o->sct - 2) / 106.0f);
-			o->scang = 0.13f + 0.87f * powf((7 - o->sc) / 6.0f, 2);
-			o->ssp = g->config.nsp1 + g->config.nsp2 * o->sc;
-			o->fsp = o->ssp + 0.1f;
-			o->wsep = 6.0f * o->sc;
-			float mwsep = 4.5f / 0.7f;
-			if (o->wsep < mwsep) o->wsep = mwsep;
-			if (adding_only) snake_update_length(o, g);
-
-			float ovxx;
-			float ovyy;
-
-			if (o == g->os.snakes + 0 && !g->snake_null) {
-				ovxx = o->xx + o->fx;
-				ovyy = o->yy + o->fy;
-			}
-			float csp = o->sp * (0 / 8.0f) / 4;
-			csp *= g->config.lag_mult;
-			float ochl = o->chl - 1;
-			o->chl = csp / 42.0f;
-			float ox = o->xx;
-			float oy = o->yy;
-			o->xx = xx + cosf(o->ang) * csp;
-			o->yy = yy + sinf(o->ang) * csp;
-			dx = o->xx - ox;
-			dy = o->yy - oy;
-			float dchl = o->chl - ochl;
-			k = o->fpos;
-			for (int j = 0; j < RFC; j++) {
-				o->fxs[k] -= dx * g->config.rfas[j];
-				o->fys[k] -= dy * g->config.rfas[j];
-				o->fchls[k] -= dchl * g->config.rfas[j];
+			float ox = lpo->xx + lpo->fx + dx * d3;
+			float oy = lpo->yy + lpo->fy + dy * d3;
+			float dltn = 1 - d3 / d2;
+			dx = po->xx - ox;
+			dy = po->yy - oy;
+			int k = po->fpos;
+			for (int j = 0; j < HFC; ++j) {
+				po->fxs[k] -= dx * g->config.hfas[j];
+				po->fys[k] -= dy * g->config.hfas[j];
+				po->fltns[k] -= dltn * g->config.hfas[j];
 				k++;
-				if (k >= RFC) k = 0;
+				if (k >= HFC)	k = 0;
 			}
-			o->fx = o->fxs[o->fpos];
-			o->fy = o->fys[o->fpos];
-			o->fchl = o->fchls[o->fpos];
-			o->ftg = RFC;
-			o->ehl = 0;
-			if (o == g->os.snakes + 0 && !g->snake_null) {
-				float lvx = g->config.view_xx;
-				float lvy = g->config.view_yy;
-				g->config.view_xx = o->xx + o->fx;
-				g->config.view_yy = o->yy + o->fy;
-				g->config.bgx2 -= (g->config.view_xx - lvx) * 1 / (float) g->bg_tex->dim.x;
-				g->config.bgy2 -= (g->config.view_yy - lvy) * 1 / (float) g->bg_tex->dim.y;
-				// g->config.bgx2 = fmod(g->config.bgx2, 1.0f);
-				// if (g->config.bgx2 < 0) g->config.bgx2 += 1;
-				// g->config.bgy2 = fmodf(g->config.bgy2, 1.0f);
-				// if (g->config.bgy2 < 0) g->config.bgy2 += 1;
-				float dx = g->config.view_xx - ovxx;
-				float dy = g->config.view_yy - ovyy;
-				k = g->config.fvpos;
-				for (int j = 0; j < VFC; j++) {
-					g->config.fvxs[k] -= dx * g->config.vfas[j];
-					g->config.fvys[k] -= dy * g->config.vfas[j];
-					k++;
-					if (k >= VFC) k = 0;
+
+			po->fx = po->fxs[po->fpos];
+			po->fy = po->fys[po->fpos];
+			po->fltn = po->fltns[po->fpos];
+			po->fsmu = po->fsmus[po->fpos];
+			po->ftg = HFC;
+		}
+
+		lpo = po;
+		int n2 = 3;
+		int k = ig_darray_length(o->pts) - 3;
+		if (k >= 1) {
+			lmpo = o->pts + k;
+			int n = 0;
+			mv = 0, dsmu = 0;
+			for (int m = k-1; m >= 0; --m) {
+				mpo = o->pts + m;
+				n++;
+				ox = mpo->xx;
+				oy = mpo->yy;
+				osmu = mpo->smu;
+				if (n <= 4)	mv = g->config.cst * n / 4;
+				mpo->xx += (lmpo->xx - mpo->xx) * mv;
+				mpo->yy += (lmpo->yy - mpo->yy) * mv;
+				if (mpo->smu != g->config.smus[n2]) {
+					osmu = mpo->smu;
+					mpo->smu = g->config.smus[n2];
+					dsmu = mpo->smu - osmu;
+				} else {
+					dsmu = 0;
 				}
-				g->config.fvtg = VFC;
+				if (n2 < SMUC-3)	n2++;
+				if (o->iiv) {
+					dx = mpo->xx - ox;
+					dy = mpo->yy - oy;
+					int k = mpo->fpos;
+					for (int j = 0; j < HFC; ++j) {
+						mpo->fxs[k] -= dx * g->config.hfas[j];
+						mpo->fys[k] -= dy * g->config.hfas[j];
+						mpo->fsmus[k] -= dsmu * g->config.hfas[j];
+						k++;
+						if (k >= HFC)	k = 0;
+					}
+					mpo->fx = mpo->fxs[mpo->fpos];
+					mpo->fy = mpo->fys[mpo->fpos];
+					mpo->fsmu = mpo->fsmus[mpo->fpos];
+					mpo->ftg = HFC;
+				}
+				lmpo = mpo;
 			}
+		}
+		
+
+		o->sc = fminf(6, 1 + (o->sct - 2) / 106.0f);
+		o->scang = 0.13f + 0.87f * powf((7 - o->sc) / 6.0f, 2);
+		o->ssp = g->config.nsp1 + g->config.nsp2 * o->sc;
+		o->fsp = o->ssp + 0.1f;
+		o->wsep = 6.0f * o->sc;
+		float mwsep = 4.5f / 0.7f; // !! add normal zoom
+		if (o->wsep < mwsep) o->wsep = mwsep;
+		if (adding_only) snake_update_length(o, g);
+
+		float ovxx;
+		float ovyy;
+
+		if (o == g->os.snakes + 0 && !g->snake_null) {
+			ovxx = o->xx + o->fx;
+			ovyy = o->yy + o->fy;
+		}
+		float csp = o->sp * (0 / 8.0f) / 4;
+		csp *= g->config.lag_mult;
+		float ochl = o->chl - 1;
+		o->chl = csp / o->msl;
+		dx = xx - o->xx;
+		dy = yy - o->yy;
+		float dchl = o->chl - ochl;
+		o->xx = xx;
+		o->yy = yy;
+		k = o->fpos;
+		for (int j = 0; j < RFC; j++) {
+			o->fxs[k] -= dx * g->config.rfas[j];
+			o->fys[k] -= dy * g->config.rfas[j];
+			o->fchls[k] -= dchl * g->config.rfas[j];
+			k++;
+			if (k >= RFC) k = 0;
+		}
+		o->fx = o->fxs[o->fpos];
+		o->fy = o->fys[o->fpos];
+		o->fchl = o->fchls[o->fpos];
+		o->ftg = RFC;
+		o->ehl = 0;
+		if (o == g->os.snakes + 0 && !g->snake_null) {
+			float lvx = g->config.view_xx;
+			float lvy = g->config.view_yy;
+			// follow_view == true always
+			g->config.view_xx = o->xx + o->fx;
+			g->config.view_yy = o->yy + o->fy;
+			g->config.bgx2 -= (g->config.view_xx - lvx) * 1 / (float) g->bg_tex->dim.x;
+			g->config.bgy2 -= (g->config.view_yy - lvy) * 1 / (float) g->bg_tex->dim.y;
+			// g->config.bgx2 = fmod(g->config.bgx2, 1.0f);
+			// if (g->config.bgx2 < 0) g->config.bgx2 += 1;
+			// g->config.bgy2 = fmodf(g->config.bgy2, 1.0f);
+			// if (g->config.bgy2 < 0) g->config.bgy2 += 1;
+			float dx = g->config.view_xx - ovxx;
+			float dy = g->config.view_yy - ovyy;
+			k = g->config.fvpos;
+			for (int j = 0; j < VFC; j++) {
+				g->config.fvxs[k] -= dx * g->config.vfas[j];
+				g->config.fvys[k] -= dy * g->config.vfas[j];
+				k++;
+				if (k >= VFC) k = 0;
+			}
+			g->config.fvtg = VFC;
 		}
 	} else if (packet_type == 'r') { // remove last body part (tail)
 		int id = packet[p] << 8 | packet[p + 1]; p += 2;
 		snake* o = snake_map_get(&g->os, id);
 
 		if (o) {
-			if (packet_len >= 4) {
+			if (packet_len >= 5) {
 				o->fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
 			}
 			int pts_len = ig_darray_length(o->pts);
@@ -783,6 +817,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			yy = ayy + ry * g->config.ssd256;
 			rad = packet[p] / 5.0f; p++;
 			id = sx << 24 | sy << 16 | rx << 8 | ry;
+
 			int cv2 = floorf(FOOD_SIZES * rad / 16.5f);
 			if (cv2 < 0) cv2 = 0;
 			if (cv2 >= FOOD_SIZES) cv2 = FOOD_SIZES - 1;
@@ -795,8 +830,8 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				.yy = yy,
 				.rx = xx,
 				.ry = yy,
-				.rsp = 2,
-				.cv = cv,
+				.rsp = 3,
+				.cv = cv % 9,
 				.rad = 1e-5,
 				.sz = rad,
 				.lrrad = 1e-5,
@@ -814,7 +849,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 	} else if (packet_type == 'b' || packet_type == 'f') { // FOOD
 		int sx, sy;
-		if (packet_len >= 5) {
+		if (packet_len >= 6) {
 			sx = packet[p]; p++;
 			sy = packet[p]; p++;
 			g->config.lfsx = sx;
@@ -831,7 +866,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 
 		int id = sx << 24 | sy << 16 | rx << 8 | ry;
 		int cv;
-		if (packet_len == 4 || packet_len == 6) {
+		if (packet_len == 5 || packet_len == 7) {
 			cv = packet[p]; p++;
 			g->config.lfcv = cv;
 		}
@@ -870,11 +905,12 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		int ebid = -1;
 		int sx, sy, rx, ry;
 
-		if (packet_type == '<' && packet_len == 4 || packet_type == 'C' && packet_len == 2) {
+		if (packet_type == 'c' && packet_len == 3 ||
+				packet_type == '<' && packet_len == 5 ||
+				packet_type == 'C' && packet_len == 3) {
 			sx = g->config.lfvsx;
 			sy = g->config.lfvsy;
-		}
-		else {
+		} else {
 			sx = packet[p]; p++;
 			sy = packet[p]; p++;
 			g->config.lfvsx = sx;
@@ -1039,7 +1075,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 	} else if (packet_type == 'y') { // new prey
 		int id = packet[p] << 8 | packet[p + 1]; p += 2;
-		if (packet_len == 2) {
+		if (packet_len == 3) {
 			int preys_len = ig_darray_length(g->preys);
 			for (int i = preys_len - 1; i >= 0; i--) {
 				prey* pr = g->preys + i;
@@ -1048,7 +1084,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 					break;
 				}
 			}
-		} else if (packet_len == 4) {
+		} else if (packet_len == 5) {
 			int snake_id = packet[p] << 8 | packet[p + 1]; p += 2;
 			int preys_len = ig_darray_length(g->preys);
 			for (int i = preys_len - 1; i >= 0; i--) {
@@ -1108,34 +1144,34 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			float csp = 0;
 			float ox = pr->xx;
 			float oy = pr->yy;
-			if (packet_len == 15) {
+			if (packet_len == 16) {
 				pr->dir = packet[p] - 48; p++;
 				pr->ang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 				pr->wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
-				pr->sp = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
-			}
-			else if (packet_len == 11) {
-				pr->ang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 				pr->sp = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
 			}
 			else if (packet_len == 12) {
-				pr->dir = packet[p] - 48; p++;
-				pr->wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
+				pr->ang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 				pr->sp = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
 			}
 			else if (packet_len == 13) {
 				pr->dir = packet[p] - 48; p++;
+				pr->wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
+				pr->sp = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
+			}
+			else if (packet_len == 14) {
+				pr->dir = packet[p] - 48; p++;
 				pr->ang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 				pr->wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 			}
-			else if (packet_len == 9) {
+			else if (packet_len == 10) {
 				pr->ang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 			}
-			else if (packet_len == 10) {
+			else if (packet_len == 11) {
 				pr->dir = packet[p] - 48; p++;
 				pr->wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 			}
-			else if (packet_len == 8) {
+			else if (packet_len == 9) {
 				pr->sp = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
 			}
 			pr->xx = xx + cosf(pr->ang) * csp;
@@ -1152,6 +1188,10 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			pr->fx = pr->fxs[pr->fpos];
 			pr->fy = pr->fys[pr->fpos];
 			pr->ftg = RFC;
+		}
+	} else {
+		if (packet_type != 'z') {
+			printf("unhandled packet %c\n", packet_type);
 		}
 	}
 }

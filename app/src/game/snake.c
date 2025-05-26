@@ -5,7 +5,7 @@
 
 void snake_update_length(snake* snake, game* g) {
 	float orl = snake->tl;
-	snake->tl = snake->sct + snake->fam;
+	snake->tl = snake->sct + fminf(1, snake->fam);
 	float d = snake->tl - orl;
 	int k = snake->flpos;
 	for (int j = 0; j < LFC; j++) {

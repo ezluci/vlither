@@ -40,6 +40,7 @@ void redraw(game* g, const input_data* input_data) {
 	float lvy = g->config.view_yy;
 
 	if (!g->snake_null) { // snake != NULL
+		// lx is a custom variable - sum of xx and fx
 		g->config.snake_lx = g->os.snakes[0].xx + g->os.snakes[0].fx;
 		g->config.snake_ly = g->os.snakes[0].yy + g->os.snakes[0].fy;
 		if (g->config.fvtg > 0) {
@@ -53,8 +54,11 @@ void redraw(game* g, const input_data* input_data) {
 		}
 	}
 	
+	// follow_view
 	g->config.view_xx = g->config.snake_lx + g->config.fvx;
 	g->config.view_yy = g->config.snake_ly + g->config.fvy;
+
+	// !! i dont know what is view_ang or view_dist
 	g->config.bpx1 = g->config.view_xx - (mww2 / g->config.gsc + 84);
 	g->config.bpy1 = g->config.view_yy - (mhh2 / g->config.gsc + 84);
 	g->config.bpx2 = g->config.view_xx + (mww2 / g->config.gsc + 84);
