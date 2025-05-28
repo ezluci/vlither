@@ -6,10 +6,10 @@
 
 void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 	g->config.vfr = (input_data->ctm - g->config.ltm) / 8.0f;
+	if (g->config.vfr > 5) g->config.vfr = 5;
+	if (g->config.vfr < 0) g->config.vfr = 0;
 	// printf("time = %.2f\n", input_data->ctm);
 	// printf("vfr = %.2f\n", g->config.vfr);
-	// if (g->config.vfr > 5) g->config.vfr = 5;
-	// if (g->config.vfr < 1.56f) g->config.vfr = 1.56f;
 
 	g->config.avfr = g->config.vfr;
 	g->config.ltm = input_data->ctm;
@@ -106,12 +106,13 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		int want_e = 0;
 		float ang = 0;
 		if (input_data->mouse_delta.x != 0 || input_data->mouse_delta.y != 0) want_e = 1;
-		// g->os.snakes[0].eang = atan2(ym, yx);
+		float xm = input_data->mouse_pos.x - g->icontext->default_frame.resolution.x / 2;
+		float ym = input_data->mouse_pos.y - g->icontext->default_frame.resolution.y / 2;
+		g->os.snakes[0].eang = atan2(xm, ym);
+
 		if (want_e && input_data->ctm - g->config.last_e_mtm > 50) {
 			want_e = 0;
 			g->config.last_e_mtm = input_data->ctm;
-			float xm = input_data->mouse_pos.x - g->icontext->default_frame.resolution.x / 2;
-			float ym = input_data->mouse_pos.y - g->icontext->default_frame.resolution.y / 2;
 			float d2 = xm * xm + ym * ym;
 			if (d2 > 256) {
 				ang = atan2f(ym, xm);
@@ -136,8 +137,8 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		snake* o = g->os.snakes + i;
 		mang = g->config.mamu * g->config.vfr * o->scang * o->spang;
 		float csp = o->sp * g->config.vfr / 4.0f;
-		if (csp > 42) csp = 42;
-		int edir = 0;
+		float edir = 1;
+		if (csp > o->msl) csp = o->msl;
 		
 		if (!o->dead) {
 			if (o->tsp != o->sp) {
@@ -152,7 +153,6 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 				}
 			}
 			if (o->tsp > o->fsp) o->sfr += (o->tsp - o->fsp) * g->config.vfr * 0.021f;
-			else o->sfr = 0;
 			if (o->fltg > 0) {
 				int k = g->config.vfrb * 4; // invisible tail fix
 				if (k > o->fltg) k = o->fltg;
@@ -245,7 +245,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		if (!o->dead) {
 			o->xx += cosf(o->ang) * csp;
 			o->yy += sinf(o->ang) * csp;
-			o->chl += csp / 42.0f;
+			o->chl += csp / o->msl;
 		}
 
 		if (g->config.vfrb > 0) {
@@ -261,6 +261,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 						po->da = 1;
 						if (k >= 4) {
 							ig_darray_remove(o->pts, j);
+							po->dying = false;
 						}
 					}
 				}
@@ -295,7 +296,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		}
 
 		// eyes
-		float wx = cosf(o->eang) * 2.3f;
+		float wx = cosf(o->eang) * 2.3f; // pma
 		float wy = sinf(o->eang) * 2.3f;
 		if (o->rex < wx) {
 			o->rex += g->config.vfr / 6.0f;
