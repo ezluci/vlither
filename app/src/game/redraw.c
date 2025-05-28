@@ -200,91 +200,333 @@ void redraw(game* g, const input_data* input_data) {
 			// ay = py; wtf are these, whatever
 			bp = 0;
 			
-			// drez is for some skin i think
+			// drez is for some skin
 			float rezc = 0;
 			
 			if (o->sep != o->wsep) {
 				if (o->sep < o->wsep) {
-					o->sep += 0.0035f * g->config.vfr;
+					o->sep += 0.0035f ;//* g->config.vfr;
 					if (o->sep >= o->wsep) o->sep = o->wsep;
 				}
 				else if (o->sep > o->wsep) {
-					o->sep -= 0.0035f * g->config.vfr;
+					o->sep -= 0.0035f ;//* g->config.vfr;
 					if (o->sep <= o->wsep) o->sep = o->wsep;
 				}
 			}
-			float sep = o->sep * g->config.qsm;
+			//////
 
-			float rmr = 0;
-			float lax = 0;
-			float lay = 0;
+			float px, py, px2, py2, px3, py3, po, po2, po3, lpo, ax1, ay1, ax2, ay2;
+			float d, d2, dx, dy, d3 = 0;
+			float ix1, iy2, ix2, iy2, tx, ty, ox, oy, rx, ry;
+			tx = 0;
+			ty = 0;
+			float j, k, l, m, j2, k2, irl, wk = 0, wwk, nkr;
+			float msl = o->msl;
+			float mct = 6 / (g->config.qsm * o->sep / 6);
+			float omct = mct;
+			float rmct = 1 / mct;
+			float sep = msl / mct;
+			float ll = 0;
+			int pts_len = ig_darray_length(o->pts);
+			body_part* po = o->pts + pts_len - 1;
+			px = po->xx + po->fx;
+			py = po->yy + po->fy;
+			d = sqrtf(powf(hx - px, 2) + powf(hy - py, 2));
+			dx = (hx - px) / d;
+			dy = (hy - py) / d;
+			nkr = d / msl;
+			float gptz = o->gptz;
+			float gpt, lgpt;
+			float gpt2, lgpt2;
+			float gpo;
+			float q = 0;
+			po3 = o.pts[o.pts.length - 2];
+			po2 = o.pts[o.pts.length - 1];
+			px = hx;
+			py = hy;
+			px2 = po2.xx + po2.fx;
+			py2 = po2.yy + po2.fy;
+			if (po3) {
+				px3 = po3.xx + po3.fx;
+				py3 = po3.yy + po3.fy
+			}
+			if (d >
+				msl) {
+				px = px2 + dx * msl;
+				py = py2 + dy * msl
+			}
+			ax1 = px + (px2 - px) * .5;
+			ay1 = py + (py2 - py) * .5;
+			if (nkr < 1) {
+				ax1 += (px - ax1) * (1 - nkr);
+				ay1 += (py - ay1) * (1 - nkr)
+			}
+			ax2 = px3 + (px2 - px3) * .5;
+			ay2 = py3 + (py2 - py3) * .5;
+			d2 = Math.sqrt(Math.pow(hx - ax1, 2) + Math.pow(hy - ay1, 2));
+			k = sep;
+			m = 1;
+			gpt = arp(o, q, hx, hy);
+			q++;
+			gpt.d = 0;
+			lgpt = gpt;
+			wk++;
+			while (k < d2) {
+				tx = hx - m * dx * sep;
+				ty = hy - m * dy * sep;
+				gpt = arp(o, q, tx, ty);
+				q++;
+				d = sep;
+				gpt.d = d;
+				lgpt = gpt;
+				wk++;
+				if (ll == 1) {
+					ll = 2;
+					break
+				}
+				rl -= rmct;
+				if (rl <= 0) {
+					ll = 1;
+					m += (rmct + rl) / rmct;
+					k += sep * (rmct + rl) / rmct
+				} else {
+					m++;
+					k += sep
+				}
+			}
+			irl = (k - d2) / msl;
+			if (ll <= 1) {
+				if (rl >=
+					-1E-4 && rl <= 0) rl = 0;
+				if (rl >= 0 || ll == 1) {
+					if (nkr < 1) {
+							px2 += (ax2 - px2) * .5 * (1 - nkr);
+							py2 += (ay2 - py2) * .5 * (1 - nkr)
+					}
+					if (testing && shifty) {
+							ctx.save();
+							ctx.fillStyle = "#0000FF";
+							ctx.translate(mww / 2 + (px2 - view_xx) * gsc, mhh / 2 + (py2 - view_yy) * gsc);
+							ctx.fillRect(-2, -2, 4, 4);
+							ctx.restore()
+					}
+					m = .5 + nkr - d2 / msl;
+					while (irl >= 0 && irl < m) {
+							k = irl / m;
+							ix1 = ax1 + (px2 - ax1) * k;
+							iy1 = ay1 + (py2 - ay1) * k;
+							ix2 = px2 + (ax2 - px2) * k;
+							iy2 = py2 + (ay2 - py2) * k;
+							rx = ix1 + (ix2 - ix1) * k;
+							ry = iy1 + (iy2 - iy1) * k;
+							gpt = arp(o, q, rx, ry);
+							q++;
+							d = Math.sqrt(Math.pow(gpt.xx - lgpt.xx, 2) + Math.pow(gpt.yy - lgpt.yy,
+								2));
+							gpt.d = d;
+							lgpt = gpt;
+							wk++;
+							if (ll == 1) {
+								ll = 2;
+								break
+							}
+							rl -= rmct;
+							if (rl <= 0) {
+								ll = 1;
+								irl += rmct + rl;
+								rl = 0
+							} else irl += rmct
+					}
+					irl -= m
+				}
+				if (rl >= -1E-4 && rl <= 0) rl = 0
+			}
+			var lj = o.pts.length;
+			if (ll <= 1) {
+				if (rl >= 0 || ll == 1) {
+					var wsirl = false;
+					var rmr = 0;
+					po = o.pts[lj - 1];
+					for (var j = o.pts.length - 1; j >= 2; j--) {
+							lj = j;
+							lpo = po;
+							po3 = o.pts[j - 2];
+							po2 = o.pts[j - 1];
+							po = o.pts[j];
+							px = po.xx + po.fx;
+							py = po.yy + po.fy;
+							px2 = po2.xx + po2.fx;
+							py2 = po2.yy + po2.fy;
+							px3 = po3.xx + po3.fx;
+							py3 = po3.yy + po3.fy;
+							ax1 = px + (px2 - px) * .5;
+							ay1 = py + (py2 - py) * .5;
+							ax2 = px2 + (px3 - px2) * .5;
+							ay2 = py2 + (py3 - py2) * .5;
+							m = po.ltn +
+								po.fltn;
+							wwk = omct * 2 + 2;
+							if (po.smu != lpo.smu || po.fsmu != lpo.fsmu) {
+								irl *= (lpo.smu + lpo.fsmu) / (po.smu + po.fsmu);
+								mct = omct * (po.smu + po.fsmu);
+								rmct = 1 / mct;
+								sep = msl / mct
+							}
+							rl -= rmr * rmct;
+							while (irl < m) {
+								k = irl / m;
+								ix1 = ax1 + (px2 - ax1) * k;
+								iy1 = ay1 + (py2 - ay1) * k;
+								ix2 = px2 + (ax2 - px2) * k;
+								iy2 = py2 + (ay2 - py2) * k;
+								rx = ix1 + (ix2 - ix1) * k;
+								ry = iy1 + (iy2 - iy1) * k;
+								gpt = arp(o, q, rx, ry);
+								q++;
+								if (wk <= wwk) {
+									d = Math.sqrt(Math.pow(gpt.xx - lgpt.xx, 2) + Math.pow(gpt.yy - lgpt.yy, 2));
+									gpt.d = d;
+									lgpt = gpt;
+									wk++
+								}
+								if (ll == 1) {
+									ll = 2;
+									j = -9999;
+									break
+								}
+								rl -= rmct;
+								if (rl <= 0) {
+									ll = 1;
+									irl += rmct + rl
+								} else irl +=
+									rmct
+							}
+							irl -= m;
+							if (testing && o == slither)
+								if (irl > rmct) console.log("ahh! " + irl + "  " + rmct);
+							rmr = irl / rmct;
+							rl += irl;
+							wsirl = true
+					}
+				}
+				if (wsirl) rl -= irl
+			}
+			if (ll <= 1) {
+				if (rl >= -1E-4 && rl <= 0) rl = 0;
+				if (rl >= 0 || ll == 1) {
+					po = o.pts[lj - 1];
+					po2 = o.pts[lj - 2];
+					if (po) {
+							px = po.xx + po.fx;
+							py = po.yy + po.fy
+					}
+					px2 = po2.xx + po2.fx;
+					py2 = po2.yy + po2.fy;
+					while (rl >= 0 || ll == 1) {
+							rx = px2 - (px - px2) * (irl - .5);
+							ry = py2 - (py - py2) * (irl - .5);
+							gpt = arp(o, q, rx, ry);
+							q++;
+							if (wk <= wwk) {
+								d = Math.sqrt(Math.pow(gpt.xx - lgpt.xx, 2) + Math.pow(gpt.yy - lgpt.yy, 2));
+								gpt.d = d;
+								lgpt = gpt;
+								wk++
+							}
+							if (ll == 1) {
+								ll = 2;
+								j = -9999;
+								break
+							}
+							rl -= rmct;
+							if (rl <= 0) {
+								ll = 1;
+								irl += rmct + rl
+							} else irl += rmct;
+							if (rl >= -1E-4 && rl <= 0) rl = 0
+					}
+				}
+			}
+			k = wk - 1;
+			if (k >= gptz.length) k = gptz.length;
+			if (choosing_skin) k = 0;
+			if (k >= 3) {
+				d3 = 0;
+				for (j = 0; j < k - 1; j++) {
+					gpt = gptz[j];
+					d3 += gpt.d
+				}
+				lgpt = gptz[0];
+				lgpt2 = gptz[0];
+				m = d3 / (k - 2);
+				j = 1;
+				j2 = 1;
+				v = m;
+				for (j = 0; j < k; j++) {
+					gptz[j].ox = gptz[j].xx;
+					gptz[j].oy = gptz[j].yy
+				}
+				for (j = 1; j < k; j++) {
+					gpt = gptz[j];
+					while (true) {
+							gpt2 = gptz[j2];
+							if (v < gpt2.d) {
+								gpt.xx = lgpt2.ox + (gpt2.ox - lgpt2.ox) * v / gpt2.d;
+								gpt.yy = lgpt2.oy + (gpt2.oy - lgpt2.oy) * v / gpt2.d;
+								gpt.xx += (gpt.ox - gpt.xx) * Math.pow(j /
+									k, 2);
+								gpt.yy += (gpt.oy - gpt.yy) * Math.pow(j / k, 2);
+								v += m;
+								break
+							} else {
+								v -= gpt2.d;
+								lgpt2 = gpt2;
+								j2++;
+								if (j2 >= k) {
+									j = k + 1;
+									break
+								}
+							}
+					}
+					lgpt = gpt
+				}
+			}
+			var lpx, lpy;
+			for (j = 0; j < q; j++) {
+				px = gptz[j].xx;
+				py = gptz[j].yy;
+				pbx[bp] = px;
+				pby[bp] = py;
+				pba[bp] = 0;
+				if (drez) {
+					rezc--;
+					if (rezc <= 0) rezc = 3
+				}
+				if (px >= bpx1 && py >= bpy1 && px <= bpx2 && py <= bpy2)
+					if (drez && rezc != 3) pbu[bp] = 1;
+					else pbu[bp] = 2;
+				if (bp >= 1) {
+					tx = px - lpx;
+					ty = py - lpy;
+					pba[bp] = Math.atan2(ty, tx)
+				}
+				lpx = px;
+				lpy = py;
+				bp++
+			}
+			if (q >= 2) {
+				pba[0] = pba[1];
+				o.wehang = pba[1] + Math.PI
+			} else o.wehang = o.ang;
+			var dj = 4;
+			if (drez) dj = 12;
+			ctx.save();
+			ctx.translate(mww2, mhh2);
+			var olsz = gsc * lsz * 52 / 32;
+			var shsz = gsc * lsz * 62 / 32;
 
-			pts_len = ig_darray_length(o->pts);
-			// for (int j = pts_len - 1; j >= 0; j--) {
-			// 	po = o->pts + j;
-			// 	float lpx = px;
-			// 	float lpy = py;
-			// 	px = po->xx + po->fx;
-			// 	py = po->yy + po->fy;
-			// 	if (rl > -km) {
-			// 		ax1 = ax2;
-			// 		ay1 = ay2;
-			// 		ax2 = (px + lpx) / 2;
-			// 		ay2 = (py + lpy) / 2;
-			// 		cx2 = lpx;
-			// 		cy2 = lpy;
-			// 		for (float k = 0; k < 1; k += km) {
-			// 			float m = n + k;
-			// 			ix1 = ax1 + (cx2 - ax1) * m;
-			// 			iy1 = ay1 + (cy2 - ay1) * m;
-			// 			ix2 = cx2 + (ax2 - cx2) * m;
-			// 			iy2 = cy2 + (ay2 - cy2) * m;
-			// 			lax = ax;
-			// 			lay = ay;
-			// 			ax = ix1 + (ix2 - ix1) * m;
-			// 			ay = iy1 + (iy2 - iy1) * m;
-			// 			if (rl < 0) {
-			// 				ax += -(lax - ax) * rl / km;
-			// 				ay += -(lay - ay) * rl / km;
-			// 			}
-			// 			float d = sqrtf(powf(ax - lax, 2) + powf(ay - lay, 2));
-			// 			if (rmr + d < sep) rmr += d;
-			// 			else {
-			// 				rmr = -rmr;
-			// 				for (m = (d - rmr) / sep; m >= 1; m--) {
-			// 					rmr += sep;
-			// 					float pax = lax + (ax - lax) * rmr / d;
-			// 					float pay = lay + (ay - lay) * rmr / d;
-			// 					if (pax >= g->config.bpx1 && pay >= g->config.bpy1 && pax <= g->config.bpx2 && pay <= g->config.bpy2) {
-			// 						g->config.pbx[bp] = pax;
-			// 						g->config.pby[bp] = pay;
-			// 						g->config.pbu[bp] = 2;
-			// 						float tx = ax - lax;
-			// 						float ty = ay - lay;
-			// 						g->config.pba[bp] = atan2f(ty, tx);
-			// 					}
-			// 					else g->config.pbu[bp] = 0;
-			// 					bp++;
-			// 				}
-			// 				rmr = d - rmr;
-			// 			}
-			// 			if (rl < 1) {
-			// 				rl -= km;
-			// 				if (rl <= -km) break;
-			// 			}
-			// 		}
-			// 		if (rl >= 1) rl--;
-			// 	}
-			// }
 
-			// if (ax >= g->config.bpx1 && ay >= g->config.bpy1 && ax <= g->config.bpx2 && ay <= g->config.bpy2) {
-			// 	g->config.pbu[bp] = 2;
-			// 	g->config.pbx[bp] = ax;
-			// 	g->config.pby[bp] = ay;
-			// 	g->config.pba[bp] = atan2f(ay - lay, ax - lax);
-			// } else g->config.pbu[bp] = 0;
-			bp++;
-
+			//////
 			float v = o->alive_amt * (1 - o->dead_amt);
 			v *= v;
 

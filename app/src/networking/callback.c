@@ -93,16 +93,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 	uint8_t packet_type = packet[0];
 	int p = 1;
 
-	// printf("\x1B[31m%c\x1B[0m", packet_type);
-	// printf("\t\t\t%d %c     =>", packet_len, packet_type);
-	// for (int i = 0; i < packet_len; ++i)	printf("%c", packet[i]);
-	// printf("\n");
-	// printf("\t\t\t%d %c     =>", packet_len, packet_type);
-	// for (int i = 0; i < packet_len; ++i)	printf("%d ", packet[i]);
-	// printf("\n");
-
-	// fflush(stdout);
-
 	if (packet_type == '6') {
 		printf("received pre-init, sent decrypted message and nickname/skin data\n");
 
@@ -119,7 +109,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		g->config.mscps = packet[p] << 8 | packet[p + 1]; p += 2;
 		g->config.sector_size = packet[p] << 8 | packet[p + 1];
 		g->config.ssd256 = g->config.sector_size / 256.0f; p += 2;
-		p += 2;	// sector_count_along_edge not used?
+		p += 2;	// sector_count_along_edge not used? nope
 		g->config.spangdv = packet[p] / 10.0f; p++;
 		g->config.nsp1 = (packet[p] << 8 | packet[p + 1]) / 100.0f; p += 2;
 		g->config.nsp2 = (packet[p] << 8 | packet[p + 1]) / 100.0f; p += 2;
@@ -143,13 +133,18 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		if (p < packet_len) {
 			g->config.flux_grd = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]);	p += 3;
 		} else {
-			g->config.flux_grd = g->config.grd * .98;
+			g->config.flux_grd = g->config.grd * .98f;
 		}
 		g->config.real_flux_grd = g->config.flux_grd;
+		for (int i = 0; i < FLXC; ++i)	g->config.flux_grds[i] = g->config.flux_grd;
 
 		recalcSepMults(g);
 		set_mscps_fmlts_fpsls(g);
-		// todo? setMinimapSize(24, true);
+		g->config.mmsize = 24;
+		g->config.mmrad = g->config.mmsize / 2;
+		for (int i = 0; i < g->config.mmsize * g->config.mmsize; ++i) {
+			g->config.mmdata[i] = 0;
+		}
 
 		printf("protocol version\t= %d\n", PROTOCOL_VERSION);
 		printf("grd\t= %d\n", g->config.grd);
@@ -314,11 +309,13 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			float wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 			float speed = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
 			float fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
-			int cv = (int) fmaxf(0, fminf(packet[p], 65)); p++;
+			int cv = (int) fminf(packet[p], 65); p++;
 			body_part* pts = ig_darray_create(body_part);
 			float snx = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
 			float sny = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
-			uint8_t nl, anl; nl = anl = packet[p]; p++; if (nl > 24) nl = 24;
+			uint8_t nl, anl;
+			nl = anl = packet[p]; p++;
+			if (nl > 24) nl = 24;
 			char nk[25] = {};
 			int skin_data_len = g->config.default_skins[cv][0];
 			uint8_t* skin_data = g->config.default_skins[cv] + 1;
@@ -332,7 +329,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			if (skl > 0) {
 				cusk = 1;
 				skin_data_len = 0;
-				for (int j = 8; j < skl; j += 2) {
+				for (int j = 8; j < skl; j += 2) { // i will trust whatever this is
 					uint8_t cg_len = packet[p + j];
 					skin_data_len += cg_len;
 				}
@@ -348,14 +345,13 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				}
 			}
 			p += skl;
-			p++;
+			p++; // skip cosmetic
 
 			float xx = 0;
 			float yy = 0;
 			float lx = 0;
 			float ly = 0;
 			float iang;
-			bool fp = false;
 			int k = 1;
 
 			xx = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
@@ -433,9 +429,16 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				pts[i].smu = k;
 			}
 
+			// function newSlither
 			snake o = {
 				.id = id,
 				.xx = snx,
+				.chl = 0,
+				.tsp = 0,
+				.sfr = 0,
+				.kill_count = 0,
+				.sc = 1,
+				.ssp = g->config.nsp1 + g->config.nsp2 * 1,
 				.yy = sny,
 				.ang = ang,
 				.ehang = ang,
@@ -447,10 +450,18 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				.skin_data = skin_data,
 				.cusk = cusk,
 				.ehl = 1,
+				.sp = 2,
 				.gptz = {},
 				.kill_count = 0,
 				.msl = g->config.msl
 			};
+			o.fsp = o.ssp + .1f;
+			o.msp = g->config.nsp3;
+			o.fpos = o.ftg = o.fx = o.fy = 0;
+			o.fchl = o.fapos = o.fatg = o.fa = 0;
+			o.msl = g->config.msl;
+			o.fam = 0;
+			o.rex = o.rey = 0;
 
 			if (pts_len) {
 				o.pts = pts;
@@ -462,8 +473,14 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				o.sct = 0;
 			}
 
+			o.flpos = 0;
+			o.fl = o.fltg = 0;
 			o.tl = o.sct + o.fam;
-			o.cfl = o.tl; // render_mode == 1
+			o.cfl = o.tl - .6f; // render_mode == 1 - its 2 bro
+			o.scang = 1;
+			o.dead_amt = 0;
+			o.alive_amt = 0;
+			// end newSlither
 
 			if (snake_map_get_total(&g->os) == 0) {
 				g->snake_null = 0;
@@ -512,7 +529,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 						g->os.snakes[i].dead_amt = 0;
 					} else
 						snake_map_remove_idx(&g->os, i);
-						// !! remove from g->os.snakes?
 					break;
 				}
 			}
@@ -786,7 +802,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 					o->fsp = o->ssp + 0.1;
 					o->wsep = 6 * o->sc;
 					float mwsep = 4.5f / 0.7f;
-							if (o->wsep < mwsep) o->wsep = mwsep;
+					if (o->wsep < mwsep) o->wsep = mwsep;
 					break;
 				}
 			}
@@ -900,7 +916,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		};
 
 		ig_darray_push(&g->foods, &fo);
-	} else if (packet_type == 'C' || packet_type == '<') { // FOOD
+	} else if (packet_type == 'c' || packet_type == 'C' || packet_type == '<') { // FOOD
 		int id;
 		int ebid = -1;
 		int sx, sy, rx, ry;
@@ -957,7 +973,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 	} else if (packet_type == 'v') { // died
 		// g->os.snakes[0].id = -1;
-		printf("died\n");
+		printf("died. v packet type = %d\n", packet[p]);	p += 1;
 		int final_score = floorf((g->config.fpsls[g->os.snakes[0].sct] + g->os.snakes[0].fam / g->config.fmlts[g->os.snakes[0].sct] - 1) * 15 - 5) / 1;
 		printf("score was %d\n", final_score);
 
@@ -978,7 +994,9 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			int sct = packet[p] << 8 | packet[p + 1]; p += 2;
 			float fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
 			int cv = packet[p] % 9; p++;
-			uint8_t nl, anl; nl = anl = packet[p]; p++; if (nl > 24) nl = 24;
+			uint8_t nl, anl;
+			nl = anl = packet[p]; p++;
+			if (nl > 24) nl = 24;
 			leaderboard_entry* entry = g->leaderboard + curr_n;
 			
 			if (g->config.my_pos == curr_n + 1 && !g->snake_null) {
@@ -995,12 +1013,12 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			curr_n++;
 		}
 	} else if (packet_type == 'M') { // minimap
-		g->config.mmsize = packet[p] << 8 | packet[p + 1];
-		p += 2;
+		int sz = packet[p] << 8 | packet[p+1];	 p += 2;
+		if (sz > 512)	sz = 512;
+		memset(g->config.mmdata, 0, sz * sz);
 		int xx = g->config.mmsize - 1;
 		int yy = g->config.mmsize - 1;
 		int u_m[] = { 64, 32, 16, 8, 4, 2, 1 };
-		memset(g->config.mmdata, 0, g->config.mmsize * g->config.mmsize);
 
 		while (p < packet_len) {
 			if (yy < 0) break;
@@ -1073,9 +1091,9 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				}
 			}
 		}
-	} else if (packet_type == 'y') { // new prey
+	} else if (packet_type == 'y') { // update prey status
 		int id = packet[p] << 8 | packet[p + 1]; p += 2;
-		if (packet_len == 3) {
+		if (packet_len == 3) { // remove prey
 			int preys_len = ig_darray_length(g->preys);
 			for (int i = preys_len - 1; i >= 0; i--) {
 				prey* pr = g->preys + i;
@@ -1084,7 +1102,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 					break;
 				}
 			}
-		} else if (packet_len == 5) {
+		} else if (packet_len == 5) { // prey eaten
 			int snake_id = packet[p] << 8 | packet[p + 1]; p += 2;
 			int preys_len = ig_darray_length(g->preys);
 			for (int i = preys_len - 1; i >= 0; i--) {
@@ -1097,7 +1115,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 					break;
 				}
 			}
-		} else {
+		} else { // create prey
 			int cv = packet[p]; p++;
 			float xx = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
 			float yy = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
@@ -1189,7 +1207,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			pr->fy = pr->fys[pr->fpos];
 			pr->ftg = RFC;
 		}
-	} else if (packet_type == 'z') {
+	} else if (packet_type == 'z') { // update flux_grds
 		g->config.real_flux_grd = packet[p] << 16 | packet[p+1] << 8 | packet[p+2];	p += 3;
 		int k = g->config.flux_grd_pos;
 		for (int j = 0; j < FLXC; ++j) {
@@ -1199,6 +1217,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 		g->config.flx_tg = FLXC;
 	} else {
-		printf("unhandled packet %c\n", packet_type);
+		printf("!!!!!!!!!!!!           unhandled packet %c\n", packet_type);
 	}
 }

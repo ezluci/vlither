@@ -136,6 +136,7 @@ typedef struct game {
 		float view_ang;
 
 		int mmsize;
+		float mmrad;
 		uint8_t mmdata[512 * 512];
 
 		float ltm;
