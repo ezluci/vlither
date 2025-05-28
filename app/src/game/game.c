@@ -166,9 +166,7 @@ void create_game(int argc, char** argv) {
 			.show_hud = true,
 			.show_boost = true,
 
-			.grd = -1,
 			.mscps = -1,
-			.flxc = 38,
 			.ssd256 = -1,
 			.spangdv = -1,
 			.nsp1 = -1,
@@ -178,7 +176,6 @@ void create_game(int argc, char** argv) {
 			.mamu2 = -1,
 			.cst = -1,
 			.msl = -1,
-			.flux_grd = -1,
 			.qsm = 1.7f, // 1 = high quality, 1.7 = low quality
 			.fmlts = ig_darray_create(float),
 			.fpsls = ig_darray_create(float),
@@ -379,6 +376,9 @@ void create_game(int argc, char** argv) {
 		float j = 0.5 * (1 - cosf(PI * (VFC - 1 - i) / (VFC - 1)));
 		j += (.5 * (1 - cosf(PI * j)) - j) * .5;
 		g.config.vfas[i] = j;
+	}
+	for (int i = 0; i < FLXC; ++i) {
+		g.config.flxas[i] = .5f * (1 - cosf(PI * i / (FLXC - 1)));
 	}
 	int j = 0;
 	for (int i = 0; i < P04LEN; i++) {

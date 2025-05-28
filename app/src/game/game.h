@@ -20,6 +20,7 @@ typedef struct prey prey;
 #define SMUC 100
 #define P04LEN 250
 #define P12LEN 250
+#define FLXC 38
 #define MAX_BP_RENDER (10 * (32768 + 512))
 #define MAX_FOOD_RENDER (10 * 16384)
 #define VERSION_STR "v1.7"
@@ -110,11 +111,9 @@ typedef struct game {
 	// ig_vec2 scale_factor;
 	
 	struct {
-		int grd;
 		int mscps;
 		bool md;
 		bool wmd;
-		int flxc;
 
 		float sector_size;
 		float ssd256;
@@ -126,8 +125,15 @@ typedef struct game {
 		float mamu2;
 		float cst;
 		float msl;
-		float flux_grd;
 		float qsm;
+		
+		int grd;
+		float flux_grd;
+		float flux_grds[FLXC];
+		int flux_grd_pos;
+		int flx_tg;
+		float real_flux_grd;
+		float view_ang;
 
 		int mmsize;
 		uint8_t mmdata[512 * 512];
@@ -165,6 +171,7 @@ typedef struct game {
 		float hfas[HFC];
 		float afas[AFC];
 		float vfas[VFC];
+		float flxas[FLXC];
 		float p04[P04LEN];
 		float p12[P12LEN];
 		float pbx[32767 * 2];

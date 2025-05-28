@@ -143,9 +143,9 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		if (p < packet_len) {
 			g->config.flux_grd = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]);	p += 3;
 		} else {
-			printf("weird 'a' packet\n");
 			g->config.flux_grd = g->config.grd * .98;
 		}
+		g->config.real_flux_grd = g->config.flux_grd;
 
 		recalcSepMults(g);
 		set_mscps_fmlts_fpsls(g);
@@ -1189,9 +1189,16 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			pr->fy = pr->fys[pr->fpos];
 			pr->ftg = RFC;
 		}
-	} else {
-		if (packet_type != 'z') {
-			printf("unhandled packet %c\n", packet_type);
+	} else if (packet_type == 'z') {
+		g->config.real_flux_grd = packet[p] << 16 | packet[p+1] << 8 | packet[p+2];	p += 3;
+		int k = g->config.flux_grd_pos;
+		for (int j = 0; j < FLXC; ++j) {
+			g->config.flux_grds[k] += (g->config.real_flux_grd - g->config.flux_grds[k]) * g->config.flxas[j];
+			k++;
+			if (k >= FLXC)	k = 0;
 		}
+		g->config.flx_tg = FLXC;
+	} else {
+		printf("unhandled packet %c\n", packet_type);
 	}
 }

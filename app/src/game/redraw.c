@@ -58,7 +58,8 @@ void redraw(game* g, const input_data* input_data) {
 	g->config.view_xx = g->config.snake_lx + g->config.fvx;
 	g->config.view_yy = g->config.snake_ly + g->config.fvy;
 
-	// !! i dont know what is view_ang or view_dist
+	g->config.view_ang = atan2f(g->config.view_yy - g->config.grd, g->config.view_xx - g->config.grd);
+	// i dont need view_dist
 	g->config.bpx1 = g->config.view_xx - (mww2 / g->config.gsc + 84);
 	g->config.bpy1 = g->config.view_yy - (mhh2 / g->config.gsc + 84);
 	g->config.bpx2 = g->config.view_xx + (mww2 / g->config.gsc + 84);
@@ -107,7 +108,7 @@ void redraw(game* g, const input_data* input_data) {
 		food* fo = g->foods + i;
 		ig_vec3* col = g->config.color_groups + fo->cv;
 
-		if (g->config.big_food && fo->f < 68) continue;
+		if (g->config.big_food && fo->f < 68) continue; // dont render small food
 
 		if (fo->rx >= g->config.fpx1 && fo->ry >= g->config.fpy1 && fo->rx <= g->config.fpx2 && fo->ry <= g->config.fpy2) {
 			float fx = mww2 + g->config.gsc * (fo->rx - g->config.view_xx) - g->config.gsc * ((fo->rad * fo->f2) * g->settings_instance.food_scale);
@@ -116,7 +117,7 @@ void redraw(game* g, const input_data* input_data) {
 			renderer_push_food(g->renderer, &(food_instance) {
 				.circ = { .x = fx, .y = fy, .z = ((fo->rad * fo->f) * g->settings_instance.food_scale) * g->config.gsc },
 				.ratios = { .x = 0, .y = 1 },
-				.color = { .x = col->x, .y = col->y, .z = col->z, .w = 1 }
+				.color = { .x = col->x, .y = col->y, .z = col->z, .w = .8 * fo->fr }
 			});
 		}
 	}
@@ -163,11 +164,13 @@ void redraw(game* g, const input_data* input_data) {
 			float px = po->xx + po->fx;
 			float py = po->yy + po->fy;
 			if (px >= g->config.bpx1 && py >= g->config.bpy1 && px <= g->config.bpx2 && py <= g->config.bpy2) {
-				o->iiv = true;
+				o->iiv = 1;
 				break;
 			}
 		}
+		if (o->iiv)	o->ehang = o->wehang = o->ang;
 	}
+
 	// snakes render:
 	snakes_len = snake_map_get_total(&g->os);
 	for (int i = 0; i < snakes_len; i++) {
@@ -192,28 +195,21 @@ void redraw(game* g, const input_data* input_data) {
 			py = hy;
 			ax2 = px;
 			ay2 = py;
-			if (ax2 >= g->config.bpx1 && ay2 >= g->config.bpy1 && ax2 <= g->config.bpx2 && ay2 <= g->config.bpy2) {
-				g->config.pbx[0] = ax2;
-				g->config.pby[0] = ay2;
-				g->config.pba[0] = atan2f(hy - (po->yy + po->fy), hx - (po->xx + po->fx)) + PI;
-				g->config.pbu[0] = 2;
-			} else g->config.pbu[0] = 0;
-			bp = 1;
+
+			// ax = px;
+			// ay = py; wtf are these, whatever
+			bp = 0;
+			
+			// drez is for some skin i think
 			float rezc = 0;
-			float km = 0.25f;
-			float n = fmodf(o->chl + o->fchl, km);
-			if (n < 0) n += km;
-			n = km - n;
-			rl += 1 - km * ceilf((o->chl + o->fchl) / km);
-			float ax = px;
-			float ay = py;
+			
 			if (o->sep != o->wsep) {
 				if (o->sep < o->wsep) {
-					o->sep += 0.002f * g->config.vfr;
+					o->sep += 0.0035f * g->config.vfr;
 					if (o->sep >= o->wsep) o->sep = o->wsep;
 				}
 				else if (o->sep > o->wsep) {
-					o->sep -= 0.002f * g->config.vfr;
+					o->sep -= 0.0035f * g->config.vfr;
 					if (o->sep <= o->wsep) o->sep = o->wsep;
 				}
 			}
@@ -224,69 +220,69 @@ void redraw(game* g, const input_data* input_data) {
 			float lay = 0;
 
 			pts_len = ig_darray_length(o->pts);
-			for (int j = pts_len - 1; j >= 0; j--) {
-				po = o->pts + j;
-				float lpx = px;
-				float lpy = py;
-				px = po->xx + po->fx;
-				py = po->yy + po->fy;
-				if (rl > -km) {
-					ax1 = ax2;
-					ay1 = ay2;
-					ax2 = (px + lpx) / 2;
-					ay2 = (py + lpy) / 2;
-					cx2 = lpx;
-					cy2 = lpy;
-					for (float k = 0; k < 1; k += km) {
-						float m = n + k;
-						ix1 = ax1 + (cx2 - ax1) * m;
-						iy1 = ay1 + (cy2 - ay1) * m;
-						ix2 = cx2 + (ax2 - cx2) * m;
-						iy2 = cy2 + (ay2 - cy2) * m;
-						lax = ax;
-						lay = ay;
-						ax = ix1 + (ix2 - ix1) * m;
-						ay = iy1 + (iy2 - iy1) * m;
-						if (rl < 0) {
-							ax += -(lax - ax) * rl / km;
-							ay += -(lay - ay) * rl / km;
-						}
-						float d = sqrtf(powf(ax - lax, 2) + powf(ay - lay, 2));
-						if (rmr + d < sep) rmr += d;
-						else {
-							rmr = -rmr;
-							for (m = (d - rmr) / sep; m >= 1; m--) {
-								rmr += sep;
-								float pax = lax + (ax - lax) * rmr / d;
-								float pay = lay + (ay - lay) * rmr / d;
-								if (pax >= g->config.bpx1 && pay >= g->config.bpy1 && pax <= g->config.bpx2 && pay <= g->config.bpy2) {
-									g->config.pbx[bp] = pax;
-									g->config.pby[bp] = pay;
-									g->config.pbu[bp] = 2;
-									float tx = ax - lax;
-									float ty = ay - lay;
-									g->config.pba[bp] = atan2f(ty, tx);
-								}
-								else g->config.pbu[bp] = 0;
-								bp++;
-							}
-							rmr = d - rmr;
-						}
-						if (rl < 1) {
-							rl -= km;
-							if (rl <= -km) break;
-						}
-					}
-					if (rl >= 1) rl--;
-				}
-			}
+			// for (int j = pts_len - 1; j >= 0; j--) {
+			// 	po = o->pts + j;
+			// 	float lpx = px;
+			// 	float lpy = py;
+			// 	px = po->xx + po->fx;
+			// 	py = po->yy + po->fy;
+			// 	if (rl > -km) {
+			// 		ax1 = ax2;
+			// 		ay1 = ay2;
+			// 		ax2 = (px + lpx) / 2;
+			// 		ay2 = (py + lpy) / 2;
+			// 		cx2 = lpx;
+			// 		cy2 = lpy;
+			// 		for (float k = 0; k < 1; k += km) {
+			// 			float m = n + k;
+			// 			ix1 = ax1 + (cx2 - ax1) * m;
+			// 			iy1 = ay1 + (cy2 - ay1) * m;
+			// 			ix2 = cx2 + (ax2 - cx2) * m;
+			// 			iy2 = cy2 + (ay2 - cy2) * m;
+			// 			lax = ax;
+			// 			lay = ay;
+			// 			ax = ix1 + (ix2 - ix1) * m;
+			// 			ay = iy1 + (iy2 - iy1) * m;
+			// 			if (rl < 0) {
+			// 				ax += -(lax - ax) * rl / km;
+			// 				ay += -(lay - ay) * rl / km;
+			// 			}
+			// 			float d = sqrtf(powf(ax - lax, 2) + powf(ay - lay, 2));
+			// 			if (rmr + d < sep) rmr += d;
+			// 			else {
+			// 				rmr = -rmr;
+			// 				for (m = (d - rmr) / sep; m >= 1; m--) {
+			// 					rmr += sep;
+			// 					float pax = lax + (ax - lax) * rmr / d;
+			// 					float pay = lay + (ay - lay) * rmr / d;
+			// 					if (pax >= g->config.bpx1 && pay >= g->config.bpy1 && pax <= g->config.bpx2 && pay <= g->config.bpy2) {
+			// 						g->config.pbx[bp] = pax;
+			// 						g->config.pby[bp] = pay;
+			// 						g->config.pbu[bp] = 2;
+			// 						float tx = ax - lax;
+			// 						float ty = ay - lay;
+			// 						g->config.pba[bp] = atan2f(ty, tx);
+			// 					}
+			// 					else g->config.pbu[bp] = 0;
+			// 					bp++;
+			// 				}
+			// 				rmr = d - rmr;
+			// 			}
+			// 			if (rl < 1) {
+			// 				rl -= km;
+			// 				if (rl <= -km) break;
+			// 			}
+			// 		}
+			// 		if (rl >= 1) rl--;
+			// 	}
+			// }
 
-			if (ax >= g->config.bpx1 && ay >= g->config.bpy1 && ax <= g->config.bpx2 && ay <= g->config.bpy2) {
-				g->config.pbu[bp] = 2;
-				g->config.pbx[bp] = ax;
-				g->config.pby[bp] = ay;
-				g->config.pba[bp] = atan2f(ay - lay, ax - lax);
-			} else g->config.pbu[bp] = 0;
+			// if (ax >= g->config.bpx1 && ay >= g->config.bpy1 && ax <= g->config.bpx2 && ay <= g->config.bpy2) {
+			// 	g->config.pbu[bp] = 2;
+			// 	g->config.pbx[bp] = ax;
+			// 	g->config.pby[bp] = ay;
+			// 	g->config.pba[bp] = atan2f(ay - lay, ax - lax);
+			// } else g->config.pbu[bp] = 0;
 			bp++;
 
 			float v = o->alive_amt * (1 - o->dead_amt);

@@ -46,6 +46,21 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		}
 	}
 
+	if (g->config.vfrb > 0) {
+		if (g->config.flx_tg > 0) {
+			int ki = g->config.vfrb;
+			if (ki > g->config.flx_tg)	ki = g->config.flx_tg;
+			g->config.flx_tg -= ki;
+			for (int qq = 1; qq <= ki; qq++) {
+				if (qq == ki)	g->config.flux_grd = g->config.flux_grds[g->config.flux_grd_pos];
+				g->config.flux_grds[g->config.flux_grd_pos] = g->config.real_flux_grd;
+				g->config.flux_grd_pos++;
+				if (g->config.flux_grd_pos >= FLXC)	g->config.flux_grd_pos = 0;
+         }
+		}
+		else if (g->config.flx_tg == 0)	g->config.flx_tg = -1;
+	}
+
 	if (g->settings_instance.enable_zoom) {
 		if (input_data->m_pressed) {
 			g->config.zoom -= 2 * 0.1f * g->config.gsc;
