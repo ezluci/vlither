@@ -16,3 +16,23 @@ void snake_update_length(snake* snake, game* g) {
 	snake->fl = snake->fls[snake->flpos];
 	snake->fltg = LFC;
 }
+
+gpt_struct* arp(snake* o, int q, float xx, float yy)
+{
+	int gptz_len = ig_darray_length(o->gptz);
+	if (q < gptz_len) {
+		gpt_struct* gpo = o->gptz + q;
+		gpo->xx = xx;
+		gpo->yy = yy;
+		return gpo;
+	} else {
+		ig_darray_push(&o->gptz, (&(gpt_struct) {
+			.xx = xx,
+			.yy = yy,
+			.ox = 0,
+			.oy = 0,
+			.d = 0
+		}));
+		return o->gptz + gptz_len;
+	}
+}

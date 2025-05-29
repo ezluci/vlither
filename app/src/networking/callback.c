@@ -451,7 +451,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				.cusk = cusk,
 				.ehl = 1,
 				.sp = 2,
-				.gptz = {},
+				.gptz = ig_darray_create(gpt_struct),
 				.kill_count = 0,
 				.msl = g->config.msl
 			};

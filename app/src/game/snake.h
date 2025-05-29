@@ -34,12 +34,13 @@ typedef struct body_part {
 	float fsmus[HFC];
 } body_part;
 
-typedef struct gptz_struct {
-	float ox;
-	float oy;
+typedef struct gpt_struct {
+	float d;
 	float xx;
 	float yy;
-} gptz_struct;
+	float ox;
+	float oy;
+} gpt_struct;
 
 typedef struct snake {
 	int id;
@@ -80,7 +81,7 @@ typedef struct snake {
 	float fchl;
 	float msl;
 	body_part* pts;
-	gptz_struct gptz;
+	gpt_struct* gptz;
 
 	float fxs[RFC];
 	float fys[RFC];
@@ -105,5 +106,7 @@ typedef struct snake {
 } snake;
 
 void snake_update_length(snake* snake, game* g);
+
+gpt_struct* arp(snake* o, int q, float xx, float yy);
 
 #endif
