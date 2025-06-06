@@ -512,7 +512,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			o.ssp = g->config.nsp1 + g->config.nsp2 * o.sc;
 			o.fsp = o.ssp + 0.1f;
 			o.wsep = 6 * o.sc;
-			float mwsep = 4.5f / 0.7f; // ! zoom
+			float mwsep = 4.5f / g->config.gsc; // ! zoom
 			if (o.wsep < mwsep) o.wsep = mwsep;
 			o.sep = o.wsep;
 			snake_update_length(&o, g);
@@ -597,7 +597,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		float iang;
 
 		if (packet_type == '+' || packet_type == '=') {
-			iang = packet[p] << 8 || packet[p+1];	p += 2;
+			iang = packet[p] << 8 | packet[p+1];	p += 2;
 			xx = packet[p] << 8 | packet[p+1];	p += 2;
 			yy = packet[p] << 8 | packet[p+1];	p += 2;
 		} else {
@@ -727,7 +727,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		o->ssp = g->config.nsp1 + g->config.nsp2 * o->sc;
 		o->fsp = o->ssp + 0.1f;
 		o->wsep = 6.0f * o->sc;
-		float mwsep = 4.5f / 0.7f; // !! add normal zoom
+		float mwsep = 4.5f / g->config.gsc; // !! add normal zoom
 		if (o->wsep < mwsep) o->wsep = mwsep;
 		if (adding_only) snake_update_length(o, g);
 
@@ -796,12 +796,12 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				if (!o->pts[j].dying) {
 					o->pts[j].dying = 1;
 					o->sct--;
-					o->sc = fminf(6, 1 + (o->sct - 1) / 106.0f);
+					o->sc = fminf(6, 1 + (o->sct - 2) / 106.0f);
 					o->scang = 0.13 + 0.87 * powf((7 - o->sc) / 6.0f, 2);
 					o->ssp = g->config.nsp1 + g->config.nsp2 * o->sc;
 					o->fsp = o->ssp + 0.1;
 					o->wsep = 6 * o->sc;
-					float mwsep = 4.5f / 0.7f;
+					float mwsep = 4.5f / g->config.gsc;
 					if (o->wsep < mwsep) o->wsep = mwsep;
 					break;
 				}
@@ -1016,6 +1016,8 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		int sz = packet[p] << 8 | packet[p+1];	 p += 2;
 		if (sz > 512)	sz = 512;
 		memset(g->config.mmdata, 0, sz * sz);
+		g->config.mmsize = sz;
+		g->config.mmrad = sz / 2.f;
 		int xx = g->config.mmsize - 1;
 		int yy = g->config.mmsize - 1;
 		int u_m[] = { 64, 32, 16, 8, 4, 2, 1 };
@@ -1217,6 +1219,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 		g->config.flx_tg = FLXC;
 	} else {
-		printf("!!!!!!!!!!!!           unhandled packet %c\n", packet_type);
+		printf("!!!!!!!!!!!!           unhandled packet %c %d\n", packet_type, packet_type);
 	}
 }

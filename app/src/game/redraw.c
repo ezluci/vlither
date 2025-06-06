@@ -22,7 +22,8 @@ void redraw(game* g, const input_data* input_data) {
 
 	igPushFont(g->renderer->fonts[RENDERER_FONT_SMALL]);
 	if (!g->snake_null) { // snake != NULL
-		{// if (!g->settings_instance.enable_zoom) {
+		printf("%f %f\n", g->os.snakes->xx, g->os.snakes->yy);
+		if (!g->settings_instance.enable_zoom) {
 			float dgsc = 0.64285f + 0.514285714f / fmaxf(1, (g->os.snakes[0].sct + 16.0f) / 36.0f);
 			if (g->config.gsc != dgsc) {
 				if (g->config.gsc < dgsc) {
@@ -205,11 +206,11 @@ void redraw(game* g, const input_data* input_data) {
 			
 			if (o->sep != o->wsep) {
 				if (o->sep < o->wsep) {
-					o->sep += 0.0035f * g->config.vfr;
+					o->sep += 0.0035f;
 					if (o->sep >= o->wsep) o->sep = o->wsep;
 				}
 				else if (o->sep > o->wsep) {
-					o->sep -= 0.0035f * g->config.vfr;
+					o->sep -= 0.0035f;
 					if (o->sep <= o->wsep) o->sep = o->wsep;
 				}
 			}
@@ -504,6 +505,31 @@ void redraw(game* g, const input_data* input_data) {
 			
 			// ^^^ fully rewrote from slitherio code ^^^
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
 			// vvv    this is old code + new code    vvv
 			
 			float olsz = g->config.gsc * lsz * 52 / 32;
