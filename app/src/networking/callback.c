@@ -517,6 +517,10 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			o.sep = o.wsep;
 			snake_update_length(&o, g);
 			snake_map_put(&g->os, id, &o);
+
+			if (snake_map_get_total(&g->os) == 1) {
+				printf("own %f %f\n", o.xx, o.yy);
+			}
 		}
 		else {
 			int is_kill = packet[p] == 1; p++;
@@ -758,7 +762,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		o->fx = o->fxs[o->fpos];
 		o->fy = o->fys[o->fpos];
 		o->fchl = o->fchls[o->fpos];
-		o->ftg = RFC;
+		// o->ftg = RFC; !!!!!!!!!!!!!!!!!!!!!!!
 		o->ehl = 0;
 		if (o == g->os.snakes + 0 && !g->snake_null) {
 			float lvx = g->config.view_xx;
@@ -768,10 +772,10 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			g->config.view_yy = o->yy + o->fy;
 			g->config.bgx2 -= (g->config.view_xx - lvx) * 1 / (float) g->bg_tex->dim.x;
 			g->config.bgy2 -= (g->config.view_yy - lvy) * 1 / (float) g->bg_tex->dim.y;
-			// g->config.bgx2 = fmod(g->config.bgx2, 1.0f);
-			// if (g->config.bgx2 < 0) g->config.bgx2 += 1;
-			// g->config.bgy2 = fmodf(g->config.bgy2, 1.0f);
-			// if (g->config.bgy2 < 0) g->config.bgy2 += 1;
+			g->config.bgx2 = fmod(g->config.bgx2, 1.0f);
+			if (g->config.bgx2 < 0) g->config.bgx2 += 1;
+			g->config.bgy2 = fmodf(g->config.bgy2, 1.0f);
+			if (g->config.bgy2 < 0) g->config.bgy2 += 1;
 			float dx = g->config.view_xx - ovxx;
 			float dy = g->config.view_yy - ovyy;
 			k = g->config.fvpos;
@@ -984,7 +988,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 
 	} else if (packet_type == 'l') { // leaderboard
 		memset(g->leaderboard, 0, sizeof(g->leaderboard));
-		// printf("leaderboard packet:\n");
 		g->config.my_pos = packet[p]; p++;
 		g->config.rank = packet[p] << 8 | packet[p + 1]; p += 2;
 		g->config.total_players = packet[p] << 8 | packet[p + 1]; p += 2;

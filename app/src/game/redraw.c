@@ -22,7 +22,6 @@ void redraw(game* g, const input_data* input_data) {
 
 	igPushFont(g->renderer->fonts[RENDERER_FONT_SMALL]);
 	if (!g->snake_null) { // snake != NULL
-		printf("%f %f\n", g->os.snakes->xx, g->os.snakes->yy);
 		if (!g->settings_instance.enable_zoom) {
 			float dgsc = 0.64285f + 0.514285714f / fmaxf(1, (g->os.snakes[0].sct + 16.0f) / 36.0f);
 			if (g->config.gsc != dgsc) {
@@ -41,9 +40,6 @@ void redraw(game* g, const input_data* input_data) {
 	float lvy = g->config.view_yy;
 
 	if (!g->snake_null) { // snake != NULL
-		// lx is a custom variable - sum of xx and fx
-		g->config.snake_lx = g->os.snakes[0].xx + g->os.snakes[0].fx;
-		g->config.snake_ly = g->os.snakes[0].yy + g->os.snakes[0].fy;
 		if (g->config.fvtg > 0) {
 			g->config.fvtg--;
 			g->config.fvx = g->config.fvxs[g->config.fvpos];
@@ -53,26 +49,26 @@ void redraw(game* g, const input_data* input_data) {
 			g->config.fvpos++;
 			if (g->config.fvpos >= VFC) g->config.fvpos = 0;
 		}
-	}
 	
-	// follow_view
-	g->config.view_xx = g->config.snake_lx + g->config.fvx;
-	g->config.view_yy = g->config.snake_ly + g->config.fvy;
+		// follow_view
+		g->config.view_xx = g->os.snakes[0].xx + g->os.snakes[0].fx + g->config.fvx;
+		g->config.view_yy = g->os.snakes[0].yy + g->os.snakes[0].fy + g->config.fvy;
 
-	g->config.view_ang = atan2f(g->config.view_yy - g->config.grd, g->config.view_xx - g->config.grd);
-	// i dont need view_dist
-	g->config.bpx1 = g->config.view_xx - (mww2 / g->config.gsc + 84);
-	g->config.bpy1 = g->config.view_yy - (mhh2 / g->config.gsc + 84);
-	g->config.bpx2 = g->config.view_xx + (mww2 / g->config.gsc + 84);
-	g->config.bpy2 = g->config.view_yy + (mhh2 / g->config.gsc + 84);
-	g->config.fpx1 = g->config.view_xx - (mww2 / g->config.gsc + 24);
-	g->config.fpy1 = g->config.view_yy - (mhh2 / g->config.gsc + 24);
-	g->config.fpx2 = g->config.view_xx + (mww2 / g->config.gsc + 24);
-	g->config.fpy2 = g->config.view_yy + (mhh2 / g->config.gsc + 24);
-	g->config.apx1 = g->config.view_xx - (mww2 / g->config.gsc + 210);
-	g->config.apy1 = g->config.view_yy - (mhh2 / g->config.gsc + 210);
-	g->config.apx2 = g->config.view_xx + (mww2 / g->config.gsc + 210);
-	g->config.apy2 = g->config.view_yy + (mhh2 / g->config.gsc + 210);
+		g->config.view_ang = atan2f(g->config.view_yy - g->config.grd, g->config.view_xx - g->config.grd);
+		// i dont need view_dist
+		g->config.bpx1 = g->config.view_xx - (mww2 / g->config.gsc + 84);
+		g->config.bpy1 = g->config.view_yy - (mhh2 / g->config.gsc + 84);
+		g->config.bpx2 = g->config.view_xx + (mww2 / g->config.gsc + 84);
+		g->config.bpy2 = g->config.view_yy + (mhh2 / g->config.gsc + 84);
+		g->config.fpx1 = g->config.view_xx - (mww2 / g->config.gsc + 24);
+		g->config.fpy1 = g->config.view_yy - (mhh2 / g->config.gsc + 24);
+		g->config.fpx2 = g->config.view_xx + (mww2 / g->config.gsc + 24);
+		g->config.fpy2 = g->config.view_yy + (mhh2 / g->config.gsc + 24);
+		g->config.apx1 = g->config.view_xx - (mww2 / g->config.gsc + 210);
+		g->config.apy1 = g->config.view_yy - (mhh2 / g->config.gsc + 210);
+		g->config.apx2 = g->config.view_xx + (mww2 / g->config.gsc + 210);
+		g->config.apy2 = g->config.view_yy + (mhh2 / g->config.gsc + 210);
+	}
 
 	g->config.bgx2 -= (g->config.view_xx - lvx) * 1 / (float) g->bg_tex->dim.x;
 	g->config.bgy2 -= (g->config.view_yy - lvy) * 1 / (float) g->bg_tex->dim.y;
@@ -529,38 +525,52 @@ void redraw(game* g, const input_data* input_data) {
 
 
 
-			
+
 			// vvv    this is old code + new code    vvv
 			
 			float olsz = g->config.gsc * lsz * 52 / 32;
 			float shsz = g->config.gsc * lsz * 62 / 32;
 
-			float v = o->alive_amt * (1 - o->dead_amt);
-			v *= v;
+			float a = o->alive_amt * (1 - o->dead_amt), om, mr;
+			a *= a;
+			m = 1;
 
 			// glow on player boost
 			if (o->tsp > o->fsp && g->config.show_boost) {
-				float m = o->alive_amt * (1 - o->dead_amt) * fmaxf(0, fminf(1, (o->tsp - o->ssp) / (o->msp - o->ssp)));
-				float om = m * 0.37f;
-				float mr = powf(m, 0.5f);
-				float glsz = (1.5f * g->config.gsc * lsz * (1 + (62.0f / 32 - 1) * mr)) * 0.9f;
+				m = o->alive_amt * (1 - o->dead_amt) * fmaxf(0, fminf(1, (o->tsp - o->ssp) / (o->msp - o->ssp)));
+				om = m * 0.37f;
+				mr = powf(m, 0.5f);
+				float glsz = (1.5f * g->config.gsc * lsz * (1 + (62.0f / 32 - 1) * mr));
 				float dj = 4;
 
 				for (j = bp - 1; j >= 0; j--) {
 					if (g->config.pbu[j] == 2) {
-						px = (mww2 + ((g->config.pbx[j] - g->config.view_xx) * g->config.gsc));
-						py = (mhh2 + ((g->config.pby[j] - g->config.view_yy) * g->config.gsc));
-						float a = v * mr * .38 * (.6 + .4 * cosf(j / dj - 1.15f * o->sfr));
+						float ox = tx, oy = ty;
+						tx = g->config.pbx[j];
+						ty = g->config.pby[j];
+						if (tx > ox)	d2 = tx - ox;
+						else	d2 = ox - tx;
+						if (ty > oy)	d2 += ty - oy;
+						else	d2 += oy - ty;
+						d2 /= 6;
+						if (d2 > 1)	d2 = 1;
+						float alpha = d2 * a * mr * .38 * (.6 + .4 * cosf(j / dj - 1.15f * o->sfr));
+						px = (mww2 + ((tx - g->config.view_xx) * g->config.gsc));
+						py = (mhh2 + ((ty - g->config.view_yy) * g->config.gsc));
 						renderer_push_bp(g->renderer, &(bp_instance) {
 							.circ = { .x = px - glsz, .y = py - glsz, .z = 0, .w = glsz * 2 },
 							.ratios = { .x = 0, .y = 1 },
-							.color = { .x = 1, .y = 1, .z = 1, .w = a },
+							.color = { .x = 1, .y = 1, .z = 1, .w = alpha },
 							.shadow = 1
 						});
 					}
 				}
+				m = 1 - m;
 			}
 
+			// render snake body
+			float am = a * m;
+			float oa = 0;
 			for (j = bp - 1; j >= 0; j--) {
 				if (g->config.pbu[j] >= 1) {
 					if (j >= 1 && g->config.pbu[j - 1] == 2) {
@@ -568,10 +578,11 @@ void redraw(game* g, const input_data* input_data) {
 						px = (mww2 + ((g->config.pbx[j - 1] - g->config.view_xx) * g->config.gsc));
 						py = (mhh2 + ((g->config.pby[j - 1] - g->config.view_yy) * g->config.gsc));
 
+						// shadows
 						renderer_push_bp(g->renderer, &(bp_instance) {
 							.circ = { .x = px - shsz, .y = py - shsz, .z = 1 - 0, .w = shsz * 2 },
 							.ratios = { .x = 0, .y = 1 },
-							.color = { .x = 0, .y = 0, .z = 0, .w = g->config.shadow * 0.9f * v },
+							.color = { .x = 0, .y = 0, .z = 0, .w = g->config.shadow * 0.9f * a },
 							.shadow = 1
 						});
 					}
@@ -581,10 +592,11 @@ void redraw(game* g, const input_data* input_data) {
 					px = mww2 + ((g->config.pbx[j] - g->config.view_xx) * g->config.gsc);
 					py = mhh2 + ((g->config.pby[j] - g->config.view_yy) * g->config.gsc);
 
+					// actual body
 					renderer_push_bp(g->renderer, &(bp_instance) {
 						.circ = { .x = px + (-g->config.gsc * lsz), .y = py + (-g->config.gsc * lsz), .z = 1 - 0, .w = g->config.gsc * 2 * lsz },
 						.ratios = { .x = sinf(g->config.pba[j]), .y = cosf(g->config.pba[j]) },
-						.color = { .x = col->x, .y = col->y, .z = col->z, .w = v },
+						.color = { .x = col->x, .y = col->y, .z = col->z, .w = a },
 						.shadow = 0,
 					});
 				}
@@ -600,6 +612,22 @@ void redraw(game* g, const input_data* input_data) {
 			// }
 
 			// eyes
+
+			// drawEyes fang, ssc, a=1, a2=1
+			/*float a = 1, a2 = 1;
+			float ed = 6 * ssc;
+			float esp = 6 * ssc;
+			float hx = o->xx + o->fx;
+			float hy = o->yy + o->fy;
+
+			float ex = cosf(fang) * ed + cosf(fang - PI / 2) * (esp + 0.5f);
+			float ey = sinf(fang) * ed + sinf(fang - PI / 2) * (esp + 0.5f);
+
+			if (o->dead_amt == 0)	a *= .75f;
+			else	a *= .75 * sqrtf(1 - o->dead_amt);
+			
+			😭*/
+
 			float ed = 6 * ssc;
 			float esp = 6 * ssc;
 
@@ -616,7 +644,7 @@ void redraw(game* g, const input_data* input_data) {
 					.w = rd2
 				},
 				.ratios = { .x = 0, .y = 1 },
-				.color = { .x = 1, .y = 1, .z = 1, .w = v },
+				.color = { .x = 1, .y = 1, .z = 1, .w = a },
 				.eye = 1
 			});
 
@@ -632,7 +660,7 @@ void redraw(game* g, const input_data* input_data) {
 					.w = rd2
 				},
 				.ratios = { .x = 0, .y = 1 },
-				.color = { .x = 0, .y = 0, .z = 0, .w = v },
+				.color = { .x = 0, .y = 0, .z = 0, .w = a },
 				.eye = 1,
 			});
 
@@ -651,7 +679,7 @@ void redraw(game* g, const input_data* input_data) {
 					.w = rd2
 				},
 				.ratios = { .x = 0, .y = 1 },
-				.color = { .x = 1, .y = 1, .z = 1, .w = v },
+				.color = { .x = 1, .y = 1, .z = 1, .w = a },
 				.eye = 1,
 			});
 
@@ -667,7 +695,7 @@ void redraw(game* g, const input_data* input_data) {
 					.w = rd2
 				},
 				.ratios = { .x = 0, .y = 1 },
-				.color = { .x = 0, .y = 0, .z = 0, .w = v },
+				.color = { .x = 0, .y = 0, .z = 0, .w = a },
 				.eye = 1,
 			});
 
@@ -693,20 +721,20 @@ void redraw(game* g, const input_data* input_data) {
 							ImDrawList_AddText_Vec2(draw_list,
 								(ImVec2) {
 								.x = ntx - len / 2, .y = nty + 32 + 11 * o->sc * g->config.gsc
-							}, igColorConvertFloat4ToU32((ImVec4) { .x = g->settings_instance.names_color.x, .y = g->settings_instance.names_color.y, .z = g->settings_instance.names_color.z, .w = v }), nk_buff, NULL);
+							}, igColorConvertFloat4ToU32((ImVec4) { .x = g->settings_instance.names_color.x, .y = g->settings_instance.names_color.y, .z = g->settings_instance.names_color.z, .w = a }), nk_buff, NULL);
 						} else {
 							igCalcTextSize(&nick_txt_size, o->nk, NULL, 0, 0); len = nick_txt_size.x;
 							ImDrawList_AddText_Vec2(draw_list,
 								(ImVec2) {
 								.x = ntx - len / 2, .y = nty + 32 + 11 * o->sc * g->config.gsc
-							}, igColorConvertFloat4ToU32((ImVec4) { .x = g->settings_instance.names_color.x, .y = g->settings_instance.names_color.y, .z = g->settings_instance.names_color.z, .w = v }), o->nk, NULL);
+							}, igColorConvertFloat4ToU32((ImVec4) { .x = g->settings_instance.names_color.x, .y = g->settings_instance.names_color.y, .z = g->settings_instance.names_color.z, .w = a }), o->nk, NULL);
 						}
 					} else {
 						igCalcTextSize(&nick_txt_size, o->nk, NULL, 0, 0); len = nick_txt_size.x;
 						ImDrawList_AddText_Vec2(draw_list,
 								(ImVec2) {
 								.x = ntx - len / 2, .y = nty + 32 + 11 * o->sc * g->config.gsc
-							}, igColorConvertFloat4ToU32((ImVec4) { .x = g->settings_instance.names_color.x, .y = g->settings_instance.names_color.y, .z = g->settings_instance.names_color.z, .w = v }), o->nk, NULL);
+							}, igColorConvertFloat4ToU32((ImVec4) { .x = g->settings_instance.names_color.x, .y = g->settings_instance.names_color.y, .z = g->settings_instance.names_color.z, .w = a }), o->nk, NULL);
 					}
 					igPopFont();
 				}

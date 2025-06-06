@@ -175,10 +175,10 @@ typedef struct game {
 		float flxas[FLXC];
 		float p04[P04LEN];
 		float p12[P12LEN];
-		float pbx[32767 * 2];
-		float pby[32767 * 2];
-		float pba[32767 * 2];
-		float pbu[32767 * 2];
+		float pbx[32767];
+		float pby[32767];
+		float pba[32767];
+		int pbu[32767];
 
 		float view_xx;
 		float view_yy;
@@ -212,8 +212,6 @@ typedef struct game {
 		float apy2;
 		float bgx2;
 		float bgy2;
-		float snake_lx;
-		float snake_ly;
 		float mmlx;
 		float mmly;
 
