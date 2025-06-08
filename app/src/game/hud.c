@@ -119,13 +119,13 @@ void hud(game* g, const input_data* input_data) {
 		igPopFont();
 
 		if (!g->snake_null) {
-			g->config.mmlx = mm_scaled * (g->os.snakes[0].xx / (g->config.grd * 2));
-			g->config.mmly = mm_scaled * (g->os.snakes[0].yy / (g->config.grd * 2));
+			g->config.mmlx = ((g->os.snakes[0].xx - g->config.grd) / g->config.real_flux_grd * (mm_scaled / 2));
+			g->config.mmly = ((g->os.snakes[0].yy - g->config.grd) / g->config.real_flux_grd * (mm_scaled / 2));
 			g->config.length_display = floorf((g->config.fpsls[g->os.snakes[0].sct] + g->os.snakes[0].fam / g->config.fmlts[g->os.snakes[0].sct] - 1) * 15 - 5) / 1;
 			
 		}
 		renderer_push_sprite(g->renderer, &(sprite_instance) {
-			.rect = { .x = g->config.mmlx + mm_x - 3 , g->config.mmly + mm_y - 3, 6, 6 },
+			.rect = { .x = mm_x + mm_scaled / 2 + g->config.mmlx - 3 , mm_y + mm_scaled / 2 + g->config.mmly - 3, 6, 6 },
 			.ratios = { .x = 0, .y = 1 },
 			.uv_rect = { .x = 0, .y = 0, .z = 6 / 64.0f, .w = 6 / 64.0f },
 			.color = { .x = 1, .y = 1, .z = 1, .w = 1 }

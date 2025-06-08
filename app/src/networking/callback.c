@@ -125,6 +125,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				g->frame_write = 1;
 				return;
 			}
+			p += 1;
 		}
 		if (p < packet_len) {
 			g->config.msl = packet[p];	p += 1;
@@ -518,10 +519,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			o.sep = o.wsep;
 			snake_update_length(&o, g);
 			snake_map_put(&g->os, id, &o);
-
-			if (snake_map_get_total(&g->os) == 1) {
-				printf("own %f %f\n", o.xx, o.yy);
-			}
 		}
 		else {
 			int is_kill = packet[p] == 1; p++;
