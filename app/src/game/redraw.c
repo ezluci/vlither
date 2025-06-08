@@ -499,35 +499,6 @@ void redraw(game* g, const input_data* input_data) {
 			} else o->wehang = o->ang;
 			int dj = 4;
 			
-			// ^^^ fully rewrote from slitherio code ^^^
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			// vvv    this is old code + new code    vvv
-			
 			float olsz = g->config.gsc * lsz * 52 / 32;
 			float shsz = g->config.gsc * lsz * 62 / 32;
 
@@ -601,6 +572,11 @@ void redraw(game* g, const input_data* input_data) {
 					});
 				}
 			}
+			
+			// I HONESTLY DONT CARE ABOUT EYES
+			// I JUST WANT TO SOLVE THIS BUG
+			// THIS IS THE ONLY PART LEFT TO REWRITE FROM THE ENTIRE GAME
+			// I DONT KNOW WTF IS WRONG
 
 			// if (!g->snake_null && i == 0) {
 			// 	renderer_push_sprite(g->renderer, &(sprite_instance) {

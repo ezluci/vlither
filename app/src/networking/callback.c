@@ -325,6 +325,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				nk[j] = packet[p + j];
 			}
 			p += anl;
+			
 			int skl = packet[p]; p++;
 			if (skl > 0) {
 				cusk = 1;
@@ -762,7 +763,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		o->fx = o->fxs[o->fpos];
 		o->fy = o->fys[o->fpos];
 		o->fchl = o->fchls[o->fpos];
-		// o->ftg = RFC; !!!!!!!!!!!!!!!!!!!!!!!
+		o->ftg = RFC;// !!!!!!!!!!!!!!!!!!!!!!!
 		o->ehl = 0;
 		if (o == g->os.snakes + 0 && !g->snake_null) {
 			float lvx = g->config.view_xx;
