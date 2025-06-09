@@ -154,7 +154,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			}
 			if (o->tsp > o->fsp) o->sfr += (o->tsp - o->fsp) * g->config.vfr * 0.021f;
 			if (o->fltg > 0) {
-				int k = g->config.vfrb * 4; // invisible tail fix
+				int k = g->config.vfrb; // invisible tail fix - no
 				if (k > o->fltg) k = o->fltg;
 				o->fltg -= k;
 				for (int qq = 0; qq < k; qq++) {

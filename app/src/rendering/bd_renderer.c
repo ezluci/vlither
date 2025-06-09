@@ -70,7 +70,7 @@ bd_renderer* ig_bd_renderer_create(ig_context* context, unsigned int max_instanc
 				{
 					.location = 2,
 					.binding = 1,
-					.format = VK_FORMAT_R32G32B32_SFLOAT,
+					.format = VK_FORMAT_R32G32B32A32_SFLOAT,
 					.offset = offsetof(bd_instance, color)
 				}
 			}

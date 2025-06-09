@@ -9,7 +9,7 @@
 
 typedef struct bd_instance {
 	ig_vec3 circ;
-	ig_vec3 color;
+	ig_vec4 color;
 } bd_instance;
 
 typedef struct bd_renderer {

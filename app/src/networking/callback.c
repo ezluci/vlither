@@ -12,16 +12,13 @@ void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 	game* g = (game*) c->fn_data;
 
 	if (ev == MG_EV_WS_MSG) {
+		if (g->network_done) {
+			return; // ignore any leftovers messages
+		}
+
 		struct mg_ws_message* wm = (struct mg_ws_message*) ev_data;
 		const uint8_t* packet = (const uint8_t*) wm->data.buf;
 		int packet_len = wm->data.len;
-
-		// printf("\t\tFULL: %d      =>", packet_len);
-		// for (int i = 0; i < packet_len; ++i)	printf("%c", packet[i]);
-		// printf("\n");
-		// printf("\t\tFULL: %d      =>", packet_len);
-		// for (int i = 0; i < packet_len; ++i)	printf("%d ", packet[i]);
-		// printf("\n");
 
 		int p = 0;
 		if (packet[p] < 32) {
@@ -44,6 +41,10 @@ void client_callback(struct mg_connection* c, int ev, void* ev_data) {
 		}
 
 	} else if (ev == MG_EV_WAKEUP) { // ypdate & render packet
+		if (g->network_done) {
+			return; // ignore any leftovers messages
+		}
+
 		struct mg_ws_message* wm = (struct mg_ws_message*) ev_data;
 		const input_data* inp_data = (const input_data*) wm->data.buf;
 		oef(g, c, inp_data);
@@ -120,9 +121,8 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 
 		if (p < packet_len) {
 			if (packet[p] != PROTOCOL_VERSION) {
-				printf("unsupported protocol version: expected %d, got %d\n", PROTOCOL_VERSION, packet[p]);
+				printf("UNSUPPORTED PROTOCOL VERSION! expected %d, got %d.\n", PROTOCOL_VERSION, packet[p]);
 				g->network_done = 1;
-				g->frame_write = 1;
 				return;
 			}
 			p += 1;
@@ -975,9 +975,8 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 	} else if (packet_type == 'v') { // died
 		// g->os.snakes[0].id = -1;
-		printf("died. v packet type = %d\n", packet[p]);	p += 1;
 		int final_score = floorf((g->config.fpsls[g->os.snakes[0].sct] + g->os.snakes[0].fam / g->config.fmlts[g->os.snakes[0].sct] - 1) * 15 - 5) / 1;
-		printf("score was %d\n", final_score);
+		printf("died (v%d). score was %d\n", packet[p], final_score);	p += 1;
 
 		if (g->settings_instance.instant_gameover) {
 			g->network_done = 1;

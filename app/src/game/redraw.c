@@ -72,15 +72,13 @@ void redraw(game* g, const input_data* input_data) {
 
 	g->config.bgx2 -= (g->config.view_xx - lvx) * 1 / (float) g->bg_tex->dim.x;
 	g->config.bgy2 -= (g->config.view_yy - lvy) * 1 / (float) g->bg_tex->dim.y;
-
-	float grd = g->config.grd;
 	
 	renderer_push_bd(g->renderer, &(bd_instance) {
 		.circ = {
 			.x = mww2 + (g->config.grd - g->config.view_xx) * g->config.gsc,
 			.y = mhh2 + (g->config.grd - g->config.view_yy) * g->config.gsc,
-			.z = (g->config.grd * 2) * g->config.gsc },
-		.color = { .x = 0.186f, .y = 0.11f, .z = 0.13f }
+			.z = (g->config.flux_grd * 2) * g->config.gsc },
+		.color = { .x = 0.188235, .y = 0, .z = 0, .w = 0.8 }
 	});
 
 	renderer_push_bg(g->renderer, &(sprite_instance) {
