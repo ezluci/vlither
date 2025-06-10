@@ -190,20 +190,18 @@ void redraw(game* g, const input_data* input_data) {
 			py = hy;
 			ax2 = px;
 			ay2 = py;
-
-			// ax = px;
-			// ay = py; wtf are these, whatever
+			float ax = px;
+			float ay = py;
 			bp = 0;
 			
-			// drez is for some skin
+			// drez is for some skin - off by default
 			float rezc = 0;
 			
 			if (o->sep != o->wsep) {
 				if (o->sep < o->wsep) {
 					o->sep += 0.0035f;
 					if (o->sep >= o->wsep) o->sep = o->wsep;
-				}
-				else if (o->sep > o->wsep) {
+				} else if (o->sep > o->wsep) {
 					o->sep -= 0.0035f;
 					if (o->sep <= o->wsep) o->sep = o->wsep;
 				}
@@ -234,8 +232,12 @@ void redraw(game* g, const input_data* input_data) {
 			gpt_struct *gpt, *lgpt;
 			gpt_struct *gpt2, *lgpt2;
 			float gpo;
-			float q = 0;
-			po3 = o->pts + pts_len - 2;
+			int q = 0;
+			if (pts_len >= 2) {
+				po3 = o->pts + pts_len - 2;
+			} else {
+				po3 = NULL;
+			}
 			po2 = o->pts + pts_len - 1;
 			px = hx;
 			py = hy;
@@ -263,7 +265,6 @@ void redraw(game* g, const input_data* input_data) {
 			gpt = arp(o, q, hx, hy);
 			q++;
 			gpt->d = 0;
-			lgpt = gpt;
 			wk++;
 			while (k < d2) {
 				tx = hx - m * dx * sep;
@@ -272,7 +273,6 @@ void redraw(game* g, const input_data* input_data) {
 				q++;
 				d = sep;
 				gpt->d = d;
-				lgpt = gpt;
 				wk++;
 				if (ll == 1) {
 					ll = 2;
@@ -306,6 +306,8 @@ void redraw(game* g, const input_data* input_data) {
 						rx = ix1 + (ix2 - ix1) * k;
 						ry = iy1 + (iy2 - iy1) * k;
 						gpt = arp(o, q, rx, ry);
+						if (q == 0)	lgpt = o->gptz + q;
+						else	lgpt = o->gptz + q-1;
 						q++;
 						d = sqrtf(powf(gpt->xx - lgpt->xx, 2) + powf(gpt->yy - lgpt->yy, 2));
 						gpt->d = d;
@@ -331,6 +333,7 @@ void redraw(game* g, const input_data* input_data) {
 			if (ll <= 1) {
 				int wsirl = false;
 				if (rl >= 0 || ll == 1) {
+					wsirl = false;
 					int rmr = 0;
 					po = o->pts + lj - 1;
 					for (int j = lj - 1; j >= 2; j--) {
@@ -367,6 +370,8 @@ void redraw(game* g, const input_data* input_data) {
 							rx = ix1 + (ix2 - ix1) * k;
 							ry = iy1 + (iy2 - iy1) * k;
 							gpt = arp(o, q, rx, ry);
+							if (q == 0)	lgpt = o->gptz + q;
+							else	lgpt = o->gptz + q-1;
 							q++;
 							if (wk <= wwk) {
 								d = sqrtf(powf(gpt->xx - lgpt->xx, 2) + powf(gpt->yy - lgpt->yy, 2));
@@ -570,11 +575,6 @@ void redraw(game* g, const input_data* input_data) {
 					});
 				}
 			}
-			
-			// I HONESTLY DONT CARE ABOUT EYES
-			// I JUST WANT TO SOLVE THIS BUG
-			// THIS IS THE ONLY PART LEFT TO REWRITE FROM THE ENTIRE GAME
-			// I DONT KNOW WTF IS WRONG
 
 			// if (!g->snake_null && i == 0) {
 			// 	renderer_push_sprite(g->renderer, &(sprite_instance) {

@@ -21,10 +21,9 @@ gpt_struct* arp(snake* o, int q, float xx, float yy)
 {
 	int gptz_len = ig_darray_length(o->gptz);
 	if (q < gptz_len) {
-		gpt_struct* gpo = o->gptz + q;
-		gpo->xx = xx;
-		gpo->yy = yy;
-		return gpo;
+		(o->gptz + q)->xx = xx;
+		(o->gptz + q)->yy = yy;
+		return o->gptz + q;
 	} else {
 		ig_darray_push(&o->gptz, (&(gpt_struct) {
 			.xx = xx,

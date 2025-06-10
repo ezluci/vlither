@@ -126,8 +126,16 @@ workspace "vlither"
 		
 		filter { "configurations:release", "system:linux" }
 			optimize "speed"
-			symbols "off"	
+			symbols "off"
 		
 		filter { "configurations:debug" }
 			optimize "off"
 			symbols "on"
+			buildoptions {
+				"-fsanitize=address,undefined",
+				"-fno-omit-frame-pointer",
+				"-fstack-protector-all"
+			}
+			linkoptions {
+				"-fsanitize=address,undefined"
+			}

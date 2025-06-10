@@ -52,7 +52,7 @@ void _ig_darray_pop(void* darray) {
 void _ig_darray_remove(void* darray, size_t i) {
 	size_t* fields = _ig_darray_get_fields(darray);
 	fields[_IG_DARRAY_LENGTH]--;
-	memcpy(darray + i * fields[_IG_DARRAY_STRIDE], darray + (i + 1) * fields[_IG_DARRAY_STRIDE], (fields[_IG_DARRAY_LENGTH] - i) * fields[_IG_DARRAY_STRIDE]);
+	memmove(darray + i * fields[_IG_DARRAY_STRIDE], darray + (i + 1) * fields[_IG_DARRAY_STRIDE], (fields[_IG_DARRAY_LENGTH] - i) * fields[_IG_DARRAY_STRIDE]);
 }
 
 size_t _ig_darray_length(void* darray) {

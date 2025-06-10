@@ -108,7 +108,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		if (input_data->mouse_delta.x != 0 || input_data->mouse_delta.y != 0) want_e = 1;
 		float xm = input_data->mouse_pos.x - g->icontext->default_frame.resolution.x / 2;
 		float ym = input_data->mouse_pos.y - g->icontext->default_frame.resolution.y / 2;
-		g->os.snakes[0].eang = atan2(xm, ym);
+		g->os.snakes[0].eang = atan2f(ym, xm);
 
 		if (want_e && input_data->ctm - g->config.last_e_mtm > 50) {
 			want_e = 0;
@@ -124,8 +124,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			int sang = floorf((250 + 1) * ang / X2PI);
 			if (sang != g->config.lsang) {
 				g->config.lsang = sang;
-				uint8_t ba[1] = { sang & 255 };
-				mg_ws_send(c, ba, 1, WEBSOCKET_OP_BINARY);
+				mg_ws_send(c, &sang, 1, WEBSOCKET_OP_BINARY);
 			}
 		}
 	}
@@ -137,7 +136,6 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		snake* o = g->os.snakes + i;
 		mang = g->config.mamu * g->config.vfr * o->scang * o->spang;
 		float csp = o->sp * g->config.vfr / 4.0f;
-		float edir = 1;
 		if (csp > o->msl) csp = o->msl;
 		
 		if (!o->dead) {
@@ -208,11 +206,11 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 				vang = fmodf(o->wehang - o->ehang, X2PI);
 				if (vang < 0) vang += X2PI;
 				if (vang > PI) vang -= X2PI;
-				if (vang < 0) edir = 1;
-				else if (vang > 0) edir = 2;
+				if (vang < 0) o->edir = 1;
+				else if (vang > 0) o->edir = 2;
 			}
 		}
-		if (edir == 1) {
+		if (o->edir == 1) {
 			tang = fmodf(o->wehang - o->ehang, X2PI);
 			if (tang < 0)	tang += X2PI;
 			if (tang > PI)	tang -= X2PI;
@@ -224,9 +222,9 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			if (vang > PI) vang -= X2PI;
 			if (vang > 0) {
 				o->ehang = o->wehang;
-				edir = 0;
+				o->edir = 0;
 			}
-		} else if (edir == 2) {
+		} else if (o->edir == 2) {
 			tang = fmodf(o->wehang - o->ehang, X2PI);
 			if (tang < 0)	tang += X2PI;
 			if (tang > PI)	tang -= X2PI;
@@ -238,7 +236,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 			if (vang > PI) vang -= X2PI;
 			if (vang < 0) {
 				o->ehang = o->wehang;
-				edir = 0;
+				o->edir = 0;
 			}
 		}
 
@@ -260,8 +258,8 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 					if (po->da >= 1) {
 						po->da = 1;
 						if (k >= 4) {
-							ig_darray_remove(o->pts, j);
 							po->dying = false;
+							ig_darray_remove(o->pts, j);
 						}
 					}
 				}

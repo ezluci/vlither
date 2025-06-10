@@ -80,6 +80,7 @@ typedef struct snake {
 	float ehang;
 	float fchl;
 	float msl;
+	int edir;
 	body_part* pts;
 	gpt_struct* gptz;
 

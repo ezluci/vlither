@@ -529,6 +529,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 					if (is_kill) {
 						g->os.snakes[i].dead = 1;
 						g->os.snakes[i].dead_amt = 0;
+						g->os.snakes[i].edir = 0;
 					} else
 						snake_map_remove_idx(&g->os, i);
 					break;
@@ -644,6 +645,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 
 		pts_len = ig_darray_length(o->pts);
 		body_part* po = o->pts + (pts_len - 1);
+		lpo = o->pts + (pts_len - 2);
 
 		if (o->iiv) {
 			dx = o->xx + o->fx - (lpo->xx + lpo->fx);
