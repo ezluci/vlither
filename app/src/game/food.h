@@ -4,7 +4,7 @@
 #define FOOD_SIZES 17
 
 typedef struct food {
-	int id;
+	int64_t id;
 	int rsp;
 	int sx;
 	int sy;

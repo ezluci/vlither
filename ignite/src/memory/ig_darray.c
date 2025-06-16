@@ -25,7 +25,7 @@ void _ig_darray_insert(void** darray, size_t i, void* value_ptr) {
 		fields = _ig_darray_get_fields(*darray);
 
 	}
-	memcpy(*darray + (i + 1) * fields[_IG_DARRAY_STRIDE], *darray + i * fields[_IG_DARRAY_STRIDE], (fields[_IG_DARRAY_LENGTH] - i) * fields[_IG_DARRAY_STRIDE]);
+	memmove(*darray + (i + 1) * fields[_IG_DARRAY_STRIDE], *darray + i * fields[_IG_DARRAY_STRIDE], (fields[_IG_DARRAY_LENGTH] - i) * fields[_IG_DARRAY_STRIDE]);
 	fields[_IG_DARRAY_LENGTH]++;
 	memcpy(*darray + i * fields[_IG_DARRAY_STRIDE], value_ptr, fields[_IG_DARRAY_STRIDE]);
 }

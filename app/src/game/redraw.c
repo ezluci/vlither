@@ -184,10 +184,8 @@ void redraw(game* g, const input_data* input_data) {
 			body_part* po = o->pts + (pts_len - 1);
 
 			lsz *= 0.5f;
-			float ix1, iy1, ix2, iy2, ax1, ay1, ax2, ay2, cx2, cy2;
+			float ix1, iy1, ix2, iy2, ax1, ay1, ax2, ay2;
 			int bp = 0;
-			px = hx;
-			py = hy;
 			ax2 = px;
 			ay2 = py;
 			float ax = px;
@@ -413,6 +411,8 @@ void redraw(game* g, const input_data* input_data) {
 						rx = px2 - (px - px2) * (irl - .5);
 						ry = py2 - (py - py2) * (irl - .5);
 						gpt = arp(o, q, rx, ry);
+						if (q == 0)	lgpt = o->gptz + q;
+						else	lgpt = o->gptz + q-1;
 						q++;
 						if (wk <= wwk) {
 							d = sqrtf(powf(gpt->xx - lgpt->xx, 2) + powf(gpt->yy - lgpt->yy, 2));
@@ -531,12 +531,12 @@ void redraw(game* g, const input_data* input_data) {
 						float alpha = d2 * a * mr * .38 * (.6 + .4 * cosf(j / dj - 1.15f * o->sfr));
 						px = (mww2 + ((tx - g->config.view_xx) * g->config.gsc));
 						py = (mhh2 + ((ty - g->config.view_yy) * g->config.gsc));
-						renderer_push_bp(g->renderer, &(bp_instance) {
-							.circ = { .x = px - glsz, .y = py - glsz, .z = 0, .w = glsz * 2 },
-							.ratios = { .x = 0, .y = 1 },
-							.color = { .x = 1, .y = 1, .z = 1, .w = alpha },
-							.shadow = 1
-						});
+						// renderer_push_bp(g->renderer, &(bp_instance) {
+						// 	.circ = { .x = px - glsz, .y = py - glsz, .z = 0.2, .w = glsz * 2 },
+						// 	.ratios = { .x = 0, .y = 1 },
+						// 	.color = { .x = 1, .y = 1, .z = 1, .w = alpha },
+						// 	.shadow = 1
+						// });
 					}
 				}
 				m = 1 - m;
@@ -544,7 +544,9 @@ void redraw(game* g, const input_data* input_data) {
 
 			// render snake body
 			float am = a * m;
-			float oa = 0;
+			// CODE NOT THE SAME, FIX!!
+			float oa = am;
+
 			for (j = bp - 1; j >= 0; j--) {
 				if (g->config.pbu[j] >= 1) {
 					if (j >= 1 && g->config.pbu[j - 1] == 2) {

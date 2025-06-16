@@ -11,13 +11,13 @@ void main() {
 	float f = (1.0 - l);
 	float o = smoothstep(0, 0.07, f);
 	if (o == 0) discard;
-    float shadow_strength = f * f * f;
+	float shadow_strength = f * f * f;
 	vec4 shadow_col = out_color * (f + shadow_strength);
 
 	float v = pow(max(0, min(1, 1 - abs(out_uv.y - 0.5) / 0.5)), .35);
 	float v2 = 1 - (l / 2);
 	v += (v2 - v) * 0.375;
-	v *= 1.22 - 0.44 * out_uv.x / 7;
+	v *= 1.22 - 0.44 * out_uv.x / 6;
 
 	vec4 eye_col = out_color;
 	eye_col.a *= o;

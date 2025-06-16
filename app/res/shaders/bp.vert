@@ -17,7 +17,7 @@ layout (set = 0, binding = 1) uniform Global {
 } global;
 
 void main() {
-	vec2 position_cpy = (position * circ.w) - circ.w * 0.5;
+	vec2 position_cpy = circ.w * (position - 0.5);
 	vec2 point_rot = position_cpy;
 	point_rot.x = position_cpy.x * ratios.y - position_cpy.y * ratios.x;
 	point_rot.y = position_cpy.x * ratios.x + position_cpy.y * ratios.y;

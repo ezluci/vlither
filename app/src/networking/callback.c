@@ -310,7 +310,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			float wang = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) * 2.0f * PI / 16777215.0f; p += 3;
 			float speed = (packet[p] << 8 | packet[p + 1]) / 1e3; p += 2;
 			float fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
-			int cv = (int) fminf(packet[p], 65); p++;
+			int cv = fminf(packet[p], 65);	p++;
 			body_part* pts = ig_darray_create(body_part);
 			float snx = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
 			float sny = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 5.0f; p += 3;
@@ -435,48 +435,33 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			snake o = {
 				.id = id,
 				.xx = snx,
+				.yy = sny,
 				.chl = 0,
 				.tsp = 0,
 				.sfr = 0,
 				.kill_count = 0,
 				.sc = 1,
 				.ssp = g->config.nsp1 + g->config.nsp2 * 1,
-				.yy = sny,
 				.ang = ang,
 				.ehang = ang,
 				.wehang = ang,
 				.eang = ang,
 				.wang = ang,
-				.scang = 1,
 				.skin_data_len = skin_data_len,
 				.skin_data = skin_data,
 				.cusk = cusk,
 				.ehl = 1,
 				.sp = 2,
-				.gptz = ig_darray_create(gpt_struct),
-				.kill_count = 0,
-				.msl = g->config.msl
+				.gptz = ig_darray_create(gpt_struct)
 			};
 			o.fsp = o.ssp + .1f;
 			o.msp = g->config.nsp3;
-			o.fpos = o.ftg = o.fx = o.fy = 0;
-			o.fchl = o.fapos = o.fatg = o.fa = 0;
 			o.msl = g->config.msl;
-			o.fam = 0;
-			o.rex = o.rey = 0;
 
-			if (pts_len) {
-				o.pts = pts;
-				o.sct = pts_len;
-				if (pts[0].dying) o.sct--;
-			} else {
-				ig_darray_destroy(pts);
-				o.pts = ig_darray_create(body_part);
-				o.sct = 0;
-			}
+			o.pts = pts;
+			o.sct = pts_len;
+			if (pts[0].dying) o.sct--;
 
-			o.flpos = 0;
-			o.fl = o.fltg = 0;
 			o.tl = o.sct + o.fam;
 			o.cfl = o.tl - .6f; // render_mode == 1 - its 2 bro
 			o.scang = 1;
@@ -621,6 +606,9 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			o->fam = (packet[p] << 16 | packet[p + 1] << 8 | packet[p + 2]) / 16777215.0f; p += 3;
 		}
 
+		// if (!g->snake_null && o == g->os.snakes) {
+		// 	printf("ADD %.2f %.2f %d\n", xx, yy, ig_darray_length(o->pts));
+		// }
 		ig_darray_push(&o->pts, (&(body_part) {
 			.xx = xx,
 			.yy = yy,
@@ -762,7 +750,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		o->fx = o->fxs[o->fpos];
 		o->fy = o->fys[o->fpos];
 		o->fchl = o->fchls[o->fpos];
-		o->ftg = RFC;// !!!!!!!!!!!!!!!!!!!!!!!
+		o->ftg = RFC;
 		o->ehl = 0;
 		if (o == g->os.snakes + 0 && !g->snake_null) {
 			float lvx = g->config.view_xx;
@@ -826,7 +814,8 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		float ayy = sy * g->config.sector_size;
 		float xx, yy;
 		int rx, ry;
-		int cv, id;
+		int cv;
+		int64_t id;
 		float rad;
 
 		while (p < packet_len) {
@@ -836,7 +825,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 			xx = axx + rx * g->config.ssd256;
 			yy = ayy + ry * g->config.ssd256;
 			rad = packet[p] / 5.0f; p++;
-			id = sx << 24 | sy << 16 | rx << 8 | ry;
+			id = (int64_t) sx << 24 | sy << 16 | rx << 8 | ry;
 
 			int cv2 = floorf(FOOD_SIZES * rad / 16.5f);
 			if (cv2 < 0) cv2 = 0;
@@ -884,7 +873,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		float xx = sx * g->config.sector_size + rx * g->config.ssd256;
 		float yy = sy * g->config.sector_size + ry * g->config.ssd256;
 
-		int id = sx << 24 | sy << 16 | rx << 8 | ry;
+		int64_t id = (int64_t) sx << 24 | sy << 16 | rx << 8 | ry;
 		int cv;
 		if (packet_len == 5 || packet_len == 7) {
 			cv = packet[p]; p++;
@@ -921,7 +910,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 
 		ig_darray_push(&g->foods, &fo);
 	} else if (packet_type == 'c' || packet_type == 'C' || packet_type == '<') { // FOOD
-		int id;
+		int64_t id;
 		int ebid = -1;
 		int sx, sy, rx, ry;
 
@@ -938,7 +927,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		}
 		rx = packet[p]; p++;
 		ry = packet[p]; p++;
-		id = sx << 24 | sy << 16 | rx << 8 | ry;
+		id = (int64_t) sx << 24 | sy << 16 | rx << 8 | ry;
 
 		if (packet_type == '<') {
 			ebid = packet[p] << 8 | packet[p + 1]; p += 2;
