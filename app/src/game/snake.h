@@ -69,7 +69,6 @@ typedef struct snake {
 	float ssp;
 	float fsp;
 	float tsp;
-	float msp;
 	float sep;
 	float sfr;
 	float wsep;
@@ -79,7 +78,6 @@ typedef struct snake {
 	float wehang;
 	float ehang;
 	float fchl;
-	float msl;
 	int edir;
 	body_part* pts;
 	gpt_struct* gptz;
@@ -108,6 +106,7 @@ typedef struct snake {
 
 void snake_update_length(snake* snake, game* g);
 
-gpt_struct* arp(snake* o, int q, float xx, float yy);
+// returns an index instead of a pointer
+size_t arp(snake* o, int q, float xx, float yy);
 
 #endif

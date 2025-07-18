@@ -455,8 +455,6 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 				.gptz = ig_darray_create(gpt_struct)
 			};
 			o.fsp = o.ssp + .1f;
-			o.msp = g->config.nsp3;
-			o.msl = g->config.msl;
 
 			o.pts = pts;
 			o.sct = pts_len;
@@ -578,7 +576,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		body_part* lmpo;
 		body_part* mpo;
 		float dx, dy, ox, oy, mv, dltn, dsmu, osmu, d;
-		float msl = o->msl;
+		float msl = g->config.msl;
 
 		float xx = 0;
 		float yy = 0;
@@ -733,7 +731,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 		float csp = o->sp * (0 / 8.0f) / 4;
 		csp *= g->config.lag_mult;
 		float ochl = o->chl - 1;
-		o->chl = csp / o->msl;
+		o->chl = csp / g->config.msl;
 		dx = xx - o->xx;
 		dy = yy - o->yy;
 		float dchl = o->chl - ochl;
@@ -778,6 +776,7 @@ void gotPacket(struct mg_connection* c, const uint8_t* packet, int packet_len) {
 	} else if (packet_type == 'r') { // remove last body part (tail)
 		int id = packet[p] << 8 | packet[p + 1]; p += 2;
 		snake* o = snake_map_get(&g->os, id);
+		if (id == 0)printf("receive r\n");
 
 		if (o) {
 			if (packet_len >= 5) {

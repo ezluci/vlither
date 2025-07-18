@@ -136,7 +136,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		snake* o = g->os.snakes + i;
 		mang = g->config.mamu * g->config.vfr * o->scang * o->spang;
 		float csp = o->sp * g->config.vfr / 4.0f;
-		if (csp > o->msl) csp = o->msl;
+		if (csp > g->config.msl) csp = g->config.msl;
 		
 		if (!o->dead) {
 			if (o->tsp != o->sp) {
@@ -243,7 +243,7 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 		if (!o->dead) {
 			o->xx += cosf(o->ang) * csp;
 			o->yy += sinf(o->ang) * csp;
-			o->chl += csp / o->msl;
+			o->chl += csp / g->config.msl;
 		}
 
 		if (g->config.vfrb > 0) {
@@ -264,6 +264,16 @@ void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 					}
 				}
 			}
+
+			// if (i == 0) {
+			// 	printf("\n\n\n\n\n\n\n\n\n");
+			// 	// for (int j = 0; j < fmin(pts_len, 5); ++j)
+			// 	int j = pts_len - 1;
+			// 	{
+			// 		printf("%.0f %.0f\n", o->pts[j].xx - o->pts[0].xx, o->pts[j].yy - o->pts[0].yy);
+			// 	}
+			// }
+
 			pts_len = ig_darray_length(o->pts);
 			for (int j = pts_len - 1; j >= 0; j--) {
 				po = o->pts + j;

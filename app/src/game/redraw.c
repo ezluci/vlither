@@ -167,6 +167,7 @@ void redraw(game* g, const input_data* input_data) {
 	}
 
 	// snakes render:
+	int wsirl;
 	snakes_len = snake_map_get_total(&g->os);
 	for (int i = 0; i < snakes_len; i++) {
 		snake* o = g->os.snakes + i;
@@ -181,16 +182,16 @@ void redraw(game* g, const input_data* input_data) {
 			float rl = o->cfl;
 
 			int pts_len = ig_darray_length(o->pts);
-			body_part* po = o->pts + (pts_len - 1);
+			body_part *po = o->pts + (pts_len - 1);
 
 			lsz *= 0.5f;
 			float ix1, iy1, ix2, iy2, ax1, ay1, ax2, ay2;
-			int bp = 0;
+			px = hx;
+			py = hy;
 			ax2 = px;
 			ay2 = py;
 			float ax = px;
 			float ay = py;
-			bp = 0;
 			
 			// drez is for some skin - off by default
 			float rezc = 0;
@@ -211,15 +212,14 @@ void redraw(game* g, const input_data* input_data) {
 			float tx, ty, ox, oy, rx, ry;
 			tx = 0;
 			ty = 0;
-			float k, l, m, k2, irl, wk = 0, wwk, nkr;
-			int j, j2;
-			float msl = o->msl;
-			float mct = 6 / (g->config.qsm * o->sep / 6);
+			float k, m, irl, wwk, nkr;
+			int j, j2, wk = 0;
+			float msl = g->config.msl;
+			float mct = 6.0f / (g->config.qsm * o->sep / 6.0f);
 			float omct = mct;
-			float rmct = 1 / mct;
+			float rmct = 1.0f / mct;
 			float sep = msl / mct;
-			float ll = 0;
-			pts_len = ig_darray_length(o->pts);
+			int ll = 0;
 			po = o->pts + pts_len - 1;
 			px = po->xx + po->fx;
 			py = po->yy + po->fy;
@@ -227,14 +227,14 @@ void redraw(game* g, const input_data* input_data) {
 			dx = (hx - px) / d;
 			dy = (hy - py) / d;
 			nkr = d / msl;
-			gpt_struct *gpt, *lgpt;
-			gpt_struct *gpt2, *lgpt2;
+			// we use indices instead of pointers, because the function
+			// arp might reallocate the entire gptz array, so yeah.
+			size_t gpt_idx, lgpt_idx, gpt2_idx, lgpt2_idx;
 			float gpo;
 			int q = 0;
+			po3 = NULL;
 			if (pts_len >= 2) {
 				po3 = o->pts + pts_len - 2;
-			} else {
-				po3 = NULL;
 			}
 			po2 = o->pts + pts_len - 1;
 			px = hx;
@@ -249,28 +249,30 @@ void redraw(game* g, const input_data* input_data) {
 				px = px2 + dx * msl;
 				py = py2 + dy * msl;
 			}
-			ax1 = px + (px2 - px) * .5;
-			ay1 = py + (py2 - py) * .5;
+			ax1 = px + (px2 - px) * .5f;
+			ay1 = py + (py2 - py) * .5f;
 			if (nkr < 1) {
 				ax1 += (px - ax1) * (1 - nkr);
 				ay1 += (py - ay1) * (1 - nkr);
 			}
-			ax2 = px3 + (px2 - px3) * .5;
-			ay2 = py3 + (py2 - py3) * .5;
+			ax2 = px3 + (px2 - px3) * .5f;
+			ay2 = py3 + (py2 - py3) * .5f;
 			d2 = sqrtf(powf(hx - ax1, 2) + powf(hy - ay1, 2));
 			k = sep;
 			m = 1;
-			gpt = arp(o, q, hx, hy);
+			gpt_idx = arp(o, q, hx, hy);
 			q++;
-			gpt->d = 0;
+			o->gptz[gpt_idx].d = 0;
+			lgpt_idx = gpt_idx;
 			wk++;
 			while (k < d2) {
 				tx = hx - m * dx * sep;
 				ty = hy - m * dy * sep;
-				gpt = arp(o, q, tx, ty);
+				gpt_idx = arp(o, q, tx, ty);
 				q++;
 				d = sep;
-				gpt->d = d;
+				o->gptz[gpt_idx].d = d;
+				lgpt_idx = gpt_idx;
 				wk++;
 				if (ll == 1) {
 					ll = 2;
@@ -303,13 +305,13 @@ void redraw(game* g, const input_data* input_data) {
 						iy2 = py2 + (ay2 - py2) * k;
 						rx = ix1 + (ix2 - ix1) * k;
 						ry = iy1 + (iy2 - iy1) * k;
-						gpt = arp(o, q, rx, ry);
-						if (q == 0)	lgpt = o->gptz + q;
-						else	lgpt = o->gptz + q-1;
+						gpt_idx = arp(o, q, rx, ry);
+						// if (q == 0)	lgpt = o->gptz + q;
+						// else	lgpt = o->gptz + q-1;
 						q++;
-						d = sqrtf(powf(gpt->xx - lgpt->xx, 2) + powf(gpt->yy - lgpt->yy, 2));
-						gpt->d = d;
-						lgpt = gpt;
+						d = sqrtf(powf(o->gptz[gpt_idx].xx - o->gptz[lgpt_idx].xx, 2) + powf(o->gptz[gpt_idx].yy - o->gptz[lgpt_idx].yy, 2));
+						o->gptz[gpt_idx].d = d;
+						lgpt_idx = gpt_idx;
 						wk++;
 						if (ll == 1) {
 							ll = 2;
@@ -329,9 +331,8 @@ void redraw(game* g, const input_data* input_data) {
 
 			int lj = ig_darray_length(o->pts);
 			if (ll <= 1) {
-				int wsirl = false;
 				if (rl >= 0 || ll == 1) {
-					wsirl = false;
+					wsirl = 0;
 					int rmr = 0;
 					po = o->pts + lj - 1;
 					for (int j = lj - 1; j >= 2; j--) {
@@ -367,14 +368,14 @@ void redraw(game* g, const input_data* input_data) {
 							iy2 = py2 + (ay2 - py2) * k;
 							rx = ix1 + (ix2 - ix1) * k;
 							ry = iy1 + (iy2 - iy1) * k;
-							gpt = arp(o, q, rx, ry);
-							if (q == 0)	lgpt = o->gptz + q;
-							else	lgpt = o->gptz + q-1;
+							gpt_idx = arp(o, q, rx, ry);
+							// if (q == 0)	lgpt = o->gptz + q;
+							// else	lgpt = o->gptz + q-1;
 							q++;
 							if (wk <= wwk) {
-								d = sqrtf(powf(gpt->xx - lgpt->xx, 2) + powf(gpt->yy - lgpt->yy, 2));
-								gpt->d = d;
-								lgpt = gpt;
+								d = sqrtf(powf(o->gptz[gpt_idx].xx - o->gptz[lgpt_idx].xx, 2) + powf(o->gptz[gpt_idx].yy - o->gptz[lgpt_idx].yy, 2));
+								o->gptz[gpt_idx].d = d;
+								lgpt_idx = gpt_idx;
 								wk++;
 							}
 							if (ll == 1) {
@@ -391,7 +392,7 @@ void redraw(game* g, const input_data* input_data) {
 						irl -= m;
 						rmr = irl / rmct;
 						rl += irl;
-						wsirl = true;
+						wsirl = 1;
 					}
 				}
 				if (wsirl) rl -= irl;
@@ -410,14 +411,12 @@ void redraw(game* g, const input_data* input_data) {
 					while (rl >= 0 || ll == 1) {
 						rx = px2 - (px - px2) * (irl - .5);
 						ry = py2 - (py - py2) * (irl - .5);
-						gpt = arp(o, q, rx, ry);
-						if (q == 0)	lgpt = o->gptz + q;
-						else	lgpt = o->gptz + q-1;
+						gpt_idx = arp(o, q, rx, ry);
 						q++;
 						if (wk <= wwk) {
-							d = sqrtf(powf(gpt->xx - lgpt->xx, 2) + powf(gpt->yy - lgpt->yy, 2));
-							gpt->d = d;
-							lgpt = gpt;
+							d = sqrtf(powf(o->gptz[gpt_idx].xx - o->gptz[lgpt_idx].xx, 2) + powf(o->gptz[gpt_idx].yy - o->gptz[lgpt_idx].yy, 2));
+							o->gptz[gpt_idx].d = d;
+							lgpt_idx = gpt_idx;
 							wk++;
 						}
 						if (ll == 1) {
@@ -434,50 +433,51 @@ void redraw(game* g, const input_data* input_data) {
 					}
 				}
 			}
-			k = wk - 1;
+			int k6 = wk - 1;
 			int gptz_len = ig_darray_length(o->gptz);
-			if (k >= gptz_len) k = gptz_len;
-			if (k >= 3) {
+			if (k6 >= gptz_len) k6 = gptz_len;
+			if (k6 >= 3) {
 				d3 = 0;
-				for (j = 0; j < k - 1; j++) {
-					gpt = o->gptz + j;
-					d3 += gpt->d;
+				for (j = 0; j < k6 - 1; j++) {
+					gpt_idx = j;
+					d3 += o->gptz[gpt_idx].d;
 				}
-				lgpt = o->gptz + 0;
-				lgpt2 = o->gptz + 0;
-				m = d3 / (k - 2);
+				lgpt_idx = 0;
+				lgpt2_idx = 0;
+				m = d3 / (k6 - 2);
 				j = 1;
 				j2 = 1;
 				float v = m;
-				for (j = 0; j < k; j++) {
+				for (j = 0; j < k6; j++) {
 					o->gptz[j].ox = o->gptz[j].xx;
 					o->gptz[j].oy = o->gptz[j].yy;
 				}
-				for (j = 1; j < k; j++) {
-					gpt = o->gptz + j;
+				for (j = 1; j < k6; j++) {
+					gpt_idx = j;
 					while (true) {
-						gpt2 = o->gptz + j2;
-						if (v < gpt2->d) {
-							gpt->xx = lgpt2->ox + (gpt2->ox - lgpt2->ox) * v / gpt2->d;
-							gpt->yy = lgpt2->oy + (gpt2->oy - lgpt2->oy) * v / gpt2->d;
-							gpt->xx += (gpt->ox - gpt->xx) * powf(j / (float) k, 2);
-							gpt->yy += (gpt->oy - gpt->yy) * powf(j / (float) k, 2);
+						gpt2_idx = j2;
+						if (v < o->gptz[gpt2_idx].d) {
+							o->gptz[gpt_idx].xx = o->gptz[lgpt2_idx].ox + (o->gptz[gpt2_idx].ox - o->gptz[lgpt2_idx].ox) * v / o->gptz[gpt2_idx].d;
+							o->gptz[gpt_idx].yy = o->gptz[lgpt2_idx].oy + (o->gptz[gpt2_idx].oy - o->gptz[lgpt2_idx].oy) * v / o->gptz[gpt2_idx].d;
+							o->gptz[gpt_idx].xx += (o->gptz[gpt_idx].ox - o->gptz[gpt_idx].xx) * powf(j / (float) k6, 2);
+							o->gptz[gpt_idx].yy += (o->gptz[gpt_idx].oy - o->gptz[gpt_idx].yy) * powf(j / (float) k6, 2);
 							v += m;
 							break;
 						} else {
-							v -= gpt2->d;
-							lgpt2 = gpt2;
+							v -= o->gptz[gpt2_idx].d;
+							lgpt2_idx = gpt2_idx;
 							j2++;
-							if (j2 >= k) {
-								j = k + 1;
+							if (j2 >= k6) {
+								j = k6 + 1;
 								break;
 							}
 						}
 					}
-					lgpt = gpt;
+					lgpt_idx = gpt_idx;
 				}
 			}
 			float lpx, lpy;
+			int bp = 0; // how many bp will actually be drawn
 			for (j = 0; j < q; j++) {
 				px = o->gptz[j].xx;
 				py = o->gptz[j].yy;
@@ -485,8 +485,7 @@ void redraw(game* g, const input_data* input_data) {
 				g->config.pby[bp] = py;
 				g->config.pba[bp] = 0;
 				if (px >= g->config.bpx1 && py >= g->config.bpy1 && px <= g->config.bpx2 && py <= g->config.bpy2)
-					if (0/*drez && rezc != 3*/) ;//pbu[bp] = 1;
-					else g->config.pbu[bp] = 2;
+					g->config.pbu[bp] = 2;
 				if (bp >= 1) {
 					tx = px - lpx;
 					ty = py - lpy;
@@ -496,11 +495,21 @@ void redraw(game* g, const input_data* input_data) {
 				lpy = py;
 				bp++;
 			}
+
+			// DONE gptz pbx pby !!!!!!!
+
+			if (i == 0) {
+				// int gg = ig_darray_length(o->gptz);
+				// for (int i = 0; i < gg; ++i)	printf("%d", g->config.pbu[i]);
+				// printf("\n");
+				printf("%d %d\n", ig_darray_length(o->gptz), q);
+			}
+
+
 			if (q >= 2) {
 				g->config.pba[0] = g->config.pba[1];
 				o->wehang = g->config.pba[1] + PI;
 			} else o->wehang = o->ang;
-			int dj = 4;
 			
 			float olsz = g->config.gsc * lsz * 52 / 32;
 			float shsz = g->config.gsc * lsz * 62 / 32;
@@ -511,7 +520,7 @@ void redraw(game* g, const input_data* input_data) {
 
 			// glow on player boost
 			if (o->tsp > o->fsp && g->config.show_boost) {
-				m = o->alive_amt * (1 - o->dead_amt) * fmaxf(0, fminf(1, (o->tsp - o->ssp) / (o->msp - o->ssp)));
+				m = o->alive_amt * (1 - o->dead_amt) * fmaxf(0, fminf(1, (o->tsp - o->ssp) / (g->config.nsp3 - o->ssp)));
 				om = m * 0.37f;
 				mr = powf(m, 0.5f);
 				float glsz = (1.5f * g->config.gsc * lsz * (1 + (62.0f / 32 - 1) * mr));
@@ -519,7 +528,7 @@ void redraw(game* g, const input_data* input_data) {
 
 				for (j = bp - 1; j >= 0; j--) {
 					if (g->config.pbu[j] == 2) {
-						float ox = tx, oy = ty;
+						ox = tx, oy = ty;
 						tx = g->config.pbx[j];
 						ty = g->config.pby[j];
 						if (tx > ox)	d2 = tx - ox;
@@ -555,12 +564,12 @@ void redraw(game* g, const input_data* input_data) {
 						py = (mhh2 + ((g->config.pby[j - 1] - g->config.view_yy) * g->config.gsc));
 
 						// shadows
-						renderer_push_bp(g->renderer, &(bp_instance) {
-							.circ = { .x = px - shsz, .y = py - shsz, .z = 1 - 0, .w = shsz * 2 },
-							.ratios = { .x = 0, .y = 1 },
-							.color = { .x = 0, .y = 0, .z = 0, .w = g->config.shadow * 0.9f * a },
-							.shadow = 1
-						});
+						// renderer_push_bp(g->renderer, &(bp_instance) {
+						// 	.circ = { .x = px - shsz, .y = py - shsz, .z = 1 - 0, .w = shsz * 2 },
+						// 	.ratios = { .x = 0, .y = 1 },
+						// 	.color = { .x = 0, .y = 0, .z = 0, .w = g->config.shadow * 0.9f * a },
+						// 	.shadow = 1
+						// });
 					}
 
 					ig_vec3* col = g->config.color_groups + o->skin_data[j % o->skin_data_len];
@@ -578,14 +587,14 @@ void redraw(game* g, const input_data* input_data) {
 				}
 			}
 
-			// if (!g->snake_null && i == 0) {
-			// 	renderer_push_sprite(g->renderer, &(sprite_instance) {
-			// 		.rect = { .x = mww2 - 1, .y = mhh2 - 50, .z = 2, .w = 100 },
-			// 		.ratios = { .x = sinf(o->ang + PI / 2), .y = cosf(o->ang + PI / 2) },
-			// 		.uv_rect = { .x = 3 / 64.0f, .y = 3 / 64.0f, .z = 1 / 64.0f, .w = 1 / 64.0f },
-			// 		.color = { .x = 1, .y = 1, .z = 1 }
-			// 	});
-			// }
+			if (!g->snake_null && i == 0) {
+				renderer_push_sprite(g->renderer, &(sprite_instance) {
+					.rect = { .x = mww2 - 1, .y = mhh2 - 50, .z = 2, .w = 100 },
+					.ratios = { .x = sinf(o->ang + PI / 2), .y = cosf(o->ang + PI / 2) },
+					.uv_rect = { .x = 3 / 64.0f, .y = 3 / 64.0f, .z = 1 / 64.0f, .w = 1 / 64.0f },
+					.color = { .x = 1, .y = 1, .z = 1 }
+				});
+			}
 
 			// eyes
 
