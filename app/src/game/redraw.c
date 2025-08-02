@@ -172,6 +172,7 @@ void redraw(game* g, const input_data* input_data) {
 	for (int i = 0; i < snakes_len; i++) {
 		snake* o = g->os.snakes + i;
 		if (o->iiv) {
+
 			float hx = o->xx + o->fx;
 			float hy = o->yy + o->fy;
 			float px = hx;
@@ -306,8 +307,6 @@ void redraw(game* g, const input_data* input_data) {
 						rx = ix1 + (ix2 - ix1) * k;
 						ry = iy1 + (iy2 - iy1) * k;
 						gpt_idx = arp(o, q, rx, ry);
-						// if (q == 0)	lgpt = o->gptz + q;
-						// else	lgpt = o->gptz + q-1;
 						q++;
 						d = sqrtf(powf(o->gptz[gpt_idx].xx - o->gptz[lgpt_idx].xx, 2) + powf(o->gptz[gpt_idx].yy - o->gptz[lgpt_idx].yy, 2));
 						o->gptz[gpt_idx].d = d;
@@ -369,8 +368,6 @@ void redraw(game* g, const input_data* input_data) {
 							rx = ix1 + (ix2 - ix1) * k;
 							ry = iy1 + (iy2 - iy1) * k;
 							gpt_idx = arp(o, q, rx, ry);
-							// if (q == 0)	lgpt = o->gptz + q;
-							// else	lgpt = o->gptz + q-1;
 							q++;
 							if (wk <= wwk) {
 								d = sqrtf(powf(o->gptz[gpt_idx].xx - o->gptz[lgpt_idx].xx, 2) + powf(o->gptz[gpt_idx].yy - o->gptz[lgpt_idx].yy, 2));
@@ -496,20 +493,21 @@ void redraw(game* g, const input_data* input_data) {
 				bp++;
 			}
 
-			// DONE gptz pbx pby !!!!!!!
-
-			if (i == 0) {
-				// int gg = ig_darray_length(o->gptz);
-				// for (int i = 0; i < gg; ++i)	printf("%d", g->config.pbu[i]);
-				// printf("\n");
-				printf("%d %d\n", ig_darray_length(o->gptz), q);
-			}
-
-
 			if (q >= 2) {
 				g->config.pba[0] = g->config.pba[1];
 				o->wehang = g->config.pba[1] + PI;
 			} else o->wehang = o->ang;
+
+			// DONE gptz pbx pby !!!!!!!
+
+			if (i == 0) {
+				int gg = ig_darray_length(o->pts);
+				printf("%.0f %.5f\n", o->pts[gg-1].xx, o->pts[gg-1].fx);
+				// printf("%d\n", gg);
+				// for (int i = 0; i < gg; ++i)	printf("%d", g->config.pbu[i]);
+				// printf("\n");
+				// printf("%d\n", bp);
+			}
 			
 			float olsz = g->config.gsc * lsz * 52 / 32;
 			float shsz = g->config.gsc * lsz * 62 / 32;

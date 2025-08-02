@@ -13,7 +13,11 @@
 		"files.associations": {
 			"random": "c",
 			"title_screen.h": "c",
-			"cimgui.h": "c"
+			"cimgui.h": "c",
+			"string": "c",
+			"format": "c",
+			"chrono": "c",
+			"functional": "c"
 		},
 	},
 	"tasks": {

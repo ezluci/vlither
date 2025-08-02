@@ -20,6 +20,3 @@ log.txt
 
 # ignore vscode settings
 .vscode
-
-# ignore decode_secret.c
-app/src/networking/decode_secret.c

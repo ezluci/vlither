@@ -6,8 +6,8 @@
 
 void oef(game* g, struct mg_connection* c, const input_data* input_data) {
 	g->config.vfr = (input_data->ctm - g->config.ltm) / 8;
-	// if (g->config.vfr > 5) g->config.vfr = 5;
-	// if (g->config.vfr < 0) g->config.vfr = 0;
+	if (g->config.vfr > 5) g->config.vfr = 5;
+	if (g->config.vfr < 0) g->config.vfr = 0;
 	// printf("time = %.2f\n", input_data->ctm);
 	// printf("vfr = %.2f\n", g->config.vfr);
 

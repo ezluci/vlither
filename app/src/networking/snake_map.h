@@ -7,7 +7,7 @@
 typedef struct snake snake;
 
 typedef struct snake_map {
-	int* ids;	
+	int* ids;
 	snake* snakes;
 } snake_map;
 
